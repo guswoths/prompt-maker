@@ -197,6 +197,22 @@ function App() {
     );
   }, [topic, details, mustInclude]);
 
+  const isInitialAppState = useMemo(() => {
+    return (
+      isDefaultInputState &&
+      isDefaultOptionState &&
+      generatedPrompt === "" &&
+      errorMessage === "" &&
+      copyButtonText === "복사하기"
+    );
+  }, [
+    isDefaultInputState,
+    isDefaultOptionState,
+    generatedPrompt,
+    errorMessage,
+    copyButtonText
+  ]);
+
   const handleExampleClick = (exampleText) => {
     setTopic(exampleText);
     setErrorMessage("");
@@ -225,6 +241,23 @@ function App() {
     setDetails(defaultInputState.details);
     setMustInclude(defaultInputState.mustInclude);
     setErrorMessage("");
+  };
+
+  const resetAll = () => {
+    setTopic(defaultInputState.topic);
+    setDetails(defaultInputState.details);
+    setMustInclude(defaultInputState.mustInclude);
+
+    setOutputLanguage(defaultOptionState.outputLanguage);
+    setOutputFormat(defaultOptionState.outputFormat);
+    setOutputLength(defaultOptionState.outputLength);
+    setTone(defaultOptionState.tone);
+    setAudienceLevel(defaultOptionState.audienceLevel);
+    setPurpose(defaultOptionState.purpose);
+
+    setGeneratedPrompt("");
+    setErrorMessage("");
+    setCopyButtonText("복사하기");
   };
 
   const handleGenerate = async () => {
@@ -297,11 +330,29 @@ function App() {
     <div style={styles.page}>
       <div style={styles.container}>
         <header style={styles.header}>
-          <p style={styles.badge}>Prompt Maker</p>
-          <h1 style={styles.title}>입력 내용과 결과 옵션을 분리해서 프롬프트 생성</h1>
-          <p style={styles.description}>
-            왼쪽에는 내가 AI에게 전달할 내용을 적고, 오른쪽에는 결과가 어떤 방식으로 나오게 할지 선택하세요.
-          </p>
+          <div style={styles.headerTop}>
+            <div>
+              <p style={styles.badge}>Prompt Maker</p>
+              <h1 style={styles.title}>입력 내용과 결과 옵션을 분리해서 프롬프트 생성</h1>
+              <p style={styles.description}>
+                왼쪽에는 내가 AI에게 전달할 내용을 적고, 오른쪽에는 결과가 어떤 방식으로 나오게 할지 선택하세요.
+              </p>
+            </div>
+
+            <button
+              onClick={resetAll}
+              disabled={isInitialAppState || isGenerating}
+              style={{
+                ...styles.globalResetButton,
+                opacity: isInitialAppState || isGenerating ? 0.45 : 1,
+                cursor:
+                  isInitialAppState || isGenerating ? "not-allowed" : "pointer"
+              }}
+              title="입력, 옵션, 결과를 모두 처음 상태로 되돌리기"
+            >
+              전체 초기화
+            </button>
+          </div>
         </header>
 
         <main style={styles.mainGrid}>
@@ -317,11 +368,12 @@ function App() {
 
                 <button
                   onClick={resetInputContent}
-                  disabled={isDefaultInputState}
+                  disabled={isDefaultInputState || isGenerating}
                   style={{
                     ...styles.resetButton,
-                    opacity: isDefaultInputState ? 0.45 : 1,
-                    cursor: isDefaultInputState ? "not-allowed" : "pointer"
+                    opacity: isDefaultInputState || isGenerating ? 0.45 : 1,
+                    cursor:
+                      isDefaultInputState || isGenerating ? "not-allowed" : "pointer"
                   }}
                   title="입력 내용을 초기 상태로 되돌리기"
                 >
@@ -390,11 +442,12 @@ function App() {
 
                   <button
                     onClick={resetToDefaultOptions}
-                    disabled={isDefaultOptionState}
+                    disabled={isDefaultOptionState || isGenerating}
                     style={{
                       ...styles.resetButton,
-                      opacity: isDefaultOptionState ? 0.45 : 1,
-                      cursor: isDefaultOptionState ? "not-allowed" : "pointer"
+                      opacity: isDefaultOptionState || isGenerating ? 0.45 : 1,
+                      cursor:
+                        isDefaultOptionState || isGenerating ? "not-allowed" : "pointer"
                     }}
                     title="기본 추천 옵션으로 되돌리기"
                   >
@@ -568,6 +621,13 @@ const styles = {
   header: {
     marginBottom: "24px"
   },
+  headerTop: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: "16px",
+    flexWrap: "wrap"
+  },
   badge: {
     display: "inline-block",
     margin: 0,
@@ -591,6 +651,16 @@ const styles = {
     color: "#4b5563",
     fontSize: "16px",
     lineHeight: 1.6
+  },
+  globalResetButton: {
+    border: "1px solid #fecaca",
+    borderRadius: "12px",
+    background: "#fff1f2",
+    color: "#b91c1c",
+    padding: "10px 14px",
+    fontSize: "13px",
+    fontWeight: 700,
+    whiteSpace: "nowrap"
   },
   mainGrid: {
     display: "grid",
