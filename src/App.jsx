@@ -6,6 +6,15 @@ const exampleTopics = [
   "유튜브 쇼츠용 30초 대본 초안 만들기"
 ];
 
+const defaultOptionState = {
+  outputLanguage: "ko",
+  outputFormat: "step",
+  outputLength: "medium",
+  tone: "friendly",
+  audienceLevel: "general",
+  purpose: "learning"
+};
+
 const languageLabelMap = {
   ko: "한국어",
   en: "영어"
@@ -113,12 +122,12 @@ function App() {
   const [topic, setTopic] = useState("");
   const [details, setDetails] = useState("");
   const [mustInclude, setMustInclude] = useState("");
-  const [outputLanguage, setOutputLanguage] = useState("ko");
-  const [outputFormat, setOutputFormat] = useState("step");
-  const [outputLength, setOutputLength] = useState("medium");
-  const [tone, setTone] = useState("friendly");
-  const [audienceLevel, setAudienceLevel] = useState("general");
-  const [purpose, setPurpose] = useState("learning");
+  const [outputLanguage, setOutputLanguage] = useState(defaultOptionState.outputLanguage);
+  const [outputFormat, setOutputFormat] = useState(defaultOptionState.outputFormat);
+  const [outputLength, setOutputLength] = useState(defaultOptionState.outputLength);
+  const [tone, setTone] = useState(defaultOptionState.tone);
+  const [audienceLevel, setAudienceLevel] = useState(defaultOptionState.audienceLevel);
+  const [purpose, setPurpose] = useState(defaultOptionState.purpose);
 
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -163,6 +172,17 @@ function App() {
 
   const isCustomState = activePreset === null;
 
+  const isDefaultOptionState = useMemo(() => {
+    return (
+      outputLanguage === defaultOptionState.outputLanguage &&
+      outputFormat === defaultOptionState.outputFormat &&
+      outputLength === defaultOptionState.outputLength &&
+      tone === defaultOptionState.tone &&
+      audienceLevel === defaultOptionState.audienceLevel &&
+      purpose === defaultOptionState.purpose
+    );
+  }, [outputLanguage, outputFormat, outputLength, tone, audienceLevel, purpose]);
+
   const handleExampleClick = (exampleText) => {
     setTopic(exampleText);
     setErrorMessage("");
@@ -175,6 +195,15 @@ function App() {
     setTone(presetValues.tone);
     setAudienceLevel(presetValues.audienceLevel);
     setPurpose(presetValues.purpose);
+  };
+
+  const resetToDefaultOptions = () => {
+    setOutputLanguage(defaultOptionState.outputLanguage);
+    setOutputFormat(defaultOptionState.outputFormat);
+    setOutputLength(defaultOptionState.outputLength);
+    setTone(defaultOptionState.tone);
+    setAudienceLevel(defaultOptionState.audienceLevel);
+    setPurpose(defaultOptionState.purpose);
   };
 
   const handleGenerate = async () => {
@@ -312,13 +341,28 @@ function App() {
             <div style={styles.presetSection}>
               <div style={styles.presetHeader}>
                 <p style={styles.presetLabel}>빠른 프리셋</p>
-                {isCustomState ? (
-                  <span style={styles.customBadge}>사용자 정의 설정</span>
-                ) : (
-                  <span style={styles.activePresetBadge}>
-                    현재 프리셋: {activePreset.label}
-                  </span>
-                )}
+                <div style={styles.presetMetaWrap}>
+                  {isCustomState ? (
+                    <span style={styles.customBadge}>사용자 정의 설정</span>
+                  ) : (
+                    <span style={styles.activePresetBadge}>
+                      현재 프리셋: {activePreset.label}
+                    </span>
+                  )}
+
+                  <button
+                    onClick={resetToDefaultOptions}
+                    disabled={isDefaultOptionState}
+                    style={{
+                      ...styles.resetButton,
+                      opacity: isDefaultOptionState ? 0.45 : 1,
+                      cursor: isDefaultOptionState ? "not-allowed" : "pointer"
+                    }}
+                    title="기본 추천 옵션으로 되돌리기"
+                  >
+                    기본값으로 초기화
+                  </button>
+                </div>
               </div>
 
               <div style={styles.presetWrap}>
@@ -569,10 +613,15 @@ const styles = {
   },
   presetHeader: {
     display: "flex",
-    flexWrap: "wrap",
-    alignItems: "center",
+    flexDirection: "column",
     gap: "10px",
     marginBottom: "10px"
+  },
+  presetMetaWrap: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "10px",
+    alignItems: "center"
   },
   presetLabel: {
     margin: 0,
@@ -597,6 +646,15 @@ const styles = {
     color: "#1d4ed8",
     border: "1px solid #bfdbfe",
     padding: "6px 10px",
+    fontSize: "12px",
+    fontWeight: 700
+  },
+  resetButton: {
+    border: "1px solid #cbd5e1",
+    borderRadius: "999px",
+    background: "#ffffff",
+    color: "#334155",
+    padding: "8px 12px",
     fontSize: "12px",
     fontWeight: 700
   },
