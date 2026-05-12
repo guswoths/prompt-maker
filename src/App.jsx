@@ -314,11 +314,11 @@ function App() {
       return "(비어 있음)";
     }
 
-    if (normalizedValue.length <= 48) {
+    if (normalizedValue.length <= 44) {
       return normalizedValue;
     }
 
-    return `${normalizedValue.slice(0, 48)}...`;
+    return `${normalizedValue.slice(0, 44)}...`;
   };
 
   const changedFieldPreviews = useMemo(() => {
@@ -327,84 +327,96 @@ function App() {
     if (topic !== defaultInputState.topic) {
       items.push({
         label: inputFieldLabels.topic,
-        preview: buildPreviewText(topic)
+        previous: buildPreviewText(defaultInputState.topic),
+        current: buildPreviewText(topic)
       });
     }
 
     if (details !== defaultInputState.details) {
       items.push({
         label: inputFieldLabels.details,
-        preview: buildPreviewText(details)
+        previous: buildPreviewText(defaultInputState.details),
+        current: buildPreviewText(details)
       });
     }
 
     if (mustInclude !== defaultInputState.mustInclude) {
       items.push({
         label: inputFieldLabels.mustInclude,
-        preview: buildPreviewText(mustInclude)
+        previous: buildPreviewText(defaultInputState.mustInclude),
+        current: buildPreviewText(mustInclude)
       });
     }
 
     if (outputLanguage !== defaultOptionState.outputLanguage) {
       items.push({
         label: optionFieldLabels.outputLanguage,
-        preview: languageLabelMap[outputLanguage]
+        previous: languageLabelMap[defaultOptionState.outputLanguage],
+        current: languageLabelMap[outputLanguage]
       });
     }
 
     if (outputFormat !== defaultOptionState.outputFormat) {
       items.push({
         label: optionFieldLabels.outputFormat,
-        preview: formatLabelMap[outputFormat]
+        previous: formatLabelMap[defaultOptionState.outputFormat],
+        current: formatLabelMap[outputFormat]
       });
     }
 
     if (outputLength !== defaultOptionState.outputLength) {
       items.push({
         label: optionFieldLabels.outputLength,
-        preview: lengthLabelMap[outputLength]
+        previous: lengthLabelMap[defaultOptionState.outputLength],
+        current: lengthLabelMap[outputLength]
       });
     }
 
     if (tone !== defaultOptionState.tone) {
       items.push({
         label: optionFieldLabels.tone,
-        preview: toneLabelMap[tone]
+        previous: toneLabelMap[defaultOptionState.tone],
+        current: toneLabelMap[tone]
       });
     }
 
     if (audienceLevel !== defaultOptionState.audienceLevel) {
       items.push({
         label: optionFieldLabels.audienceLevel,
-        preview: audienceLabelMap[audienceLevel]
+        previous: audienceLabelMap[defaultOptionState.audienceLevel],
+        current: audienceLabelMap[audienceLevel]
       });
     }
 
     if (purpose !== defaultOptionState.purpose) {
       items.push({
         label: optionFieldLabels.purpose,
-        preview: purposeLabelMap[purpose]
+        previous: purposeLabelMap[defaultOptionState.purpose],
+        current: purposeLabelMap[purpose]
       });
     }
 
     if (hasGeneratedPrompt) {
       items.push({
         label: "생성된 프롬프트",
-        preview: buildPreviewText(generatedPrompt)
+        previous: "(없음)",
+        current: buildPreviewText(generatedPrompt)
       });
     }
 
     if (hasErrorMessage) {
       items.push({
         label: "오류 메시지",
-        preview: buildPreviewText(errorMessage)
+        previous: "(없음)",
+        current: buildPreviewText(errorMessage)
       });
     }
 
     if (hasCopiedState) {
       items.push({
         label: "복사 상태",
-        preview: copyButtonText
+        previous: "복사하기",
+        current: copyButtonText
       });
     }
 
@@ -883,7 +895,7 @@ function App() {
                 전체 초기화를 진행할까요?
               </h2>
               <p id="reset-modal-description" style={styles.modalDescription}>
-                아래 항목이 처음 상태로 돌아갑니다.
+                아래 항목이 기본값으로 되돌아갑니다.
               </p>
 
               <div style={styles.resetImpactBox}>
@@ -895,7 +907,15 @@ function App() {
                     {changedFieldPreviews.map((item) => (
                       <li key={item.label} style={styles.resetImpactListItem}>
                         <span style={styles.resetImpactItemLabel}>{item.label}</span>
-                        <span style={styles.resetImpactItemPreview}>{item.preview}</span>
+                        <div style={styles.resetImpactCompareRow}>
+                          <span style={styles.resetImpactPrevious}>
+                            이전: {item.previous}
+                          </span>
+                          <span style={styles.resetImpactArrow}>→</span>
+                          <span style={styles.resetImpactCurrent}>
+                            현재: {item.current}
+                          </span>
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -1227,7 +1247,7 @@ const styles = {
   },
   modalCard: {
     width: "100%",
-    maxWidth: "520px",
+    maxWidth: "620px",
     background: "#ffffff",
     borderRadius: "18px",
     padding: "22px",
@@ -1294,8 +1314,8 @@ const styles = {
   resetImpactListItem: {
     display: "flex",
     flexDirection: "column",
-    gap: "4px",
-    padding: "10px 12px",
+    gap: "6px",
+    padding: "12px",
     borderRadius: "10px",
     background: "#ffffff",
     border: "1px solid #e5e7eb"
@@ -1305,13 +1325,30 @@ const styles = {
     fontWeight: 700,
     color: "#0f172a"
   },
-  resetImpactItemPreview: {
+  resetImpactCompareRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    flexWrap: "wrap"
+  },
+  resetImpactPrevious: {
     fontSize: "13px",
     lineHeight: 1.5,
-    color: "#475569",
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis"
+    color: "#64748b",
+    maxWidth: "100%",
+    wordBreak: "break-word"
+  },
+  resetImpactArrow: {
+    fontSize: "13px",
+    fontWeight: 700,
+    color: "#94a3b8"
+  },
+  resetImpactCurrent: {
+    fontSize: "13px",
+    lineHeight: 1.5,
+    color: "#334155",
+    maxWidth: "100%",
+    wordBreak: "break-word"
   },
   modalButtonRow: {
     display: "flex",
