@@ -208,8 +208,11 @@ export default async function handler(req, res) {
 
     if (outputLanguage === "ko") {
       result = result
+        .replace(/\p{Script=Han}+/gu, "")
         .replace(/\n{3,}/g, "\n\n")
-        .replace(/\s{2,}/g, " ")
+        .replace(/[ \t]{2,}/g, " ")
+        .replace(/\s+\n/g, "\n")
+        .replace(/\n\s+/g, "\n")
         .trim();
     }
 
