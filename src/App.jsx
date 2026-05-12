@@ -1,15 +1,22 @@
 import { useEffect, useState } from "react";
 
-const examplePrompts = [
-  "중학생 대상 과학 수업용으로 뉴턴 운동법칙을 쉬운 비유와 예시 중심으로 설명하는 프롬프트",
-  "React와 Vite의 차이를 초보 개발자도 이해할 수 있게 비교 설명하는 프롬프트",
-  "유튜브 쇼츠용으로 30초 안에 핵심만 전달하는 대본 생성 프롬프트"
+const exampleTopics = [
+  "중학생 대상 과학 수업용으로 뉴턴 운동법칙 설명",
+  "초보 개발자용 React와 Vite 차이 설명",
+  "유튜브 쇼츠용 30초 대본 초안 만들기"
 ];
 
 function App() {
-  const [userInput, setUserInput] = useState("");
+  const [topic, setTopic] = useState("");
+  const [details, setDetails] = useState("");
+  const [mustInclude, setMustInclude] = useState("");
+  const [outputLanguage, setOutputLanguage] = useState("ko");
+  const [outputFormat, setOutputFormat] = useState("step");
+  const [outputLength, setOutputLength] = useState("medium");
+  const [tone, setTone] = useState("friendly");
+  const [audienceLevel, setAudienceLevel] = useState("general");
+
   const [generatedPrompt, setGeneratedPrompt] = useState("");
-  const [promptHistory, setPromptHistory] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [copyButtonText, setCopyButtonText] = useState("복사하기");
@@ -25,41 +32,21 @@ function App() {
   }, []);
 
   const handleExampleClick = (exampleText) => {
-    setUserInput(exampleText);
+    setTopic(exampleText);
     setErrorMessage("");
   };
 
-  const pushHistory = (newPrompt) => {
-    setPromptHistory((previousHistory) => {
-      const deduplicatedHistory = previousHistory.filter(
-        (item) => item.text !== newPrompt
-      );
-
-      const nextHistory = [
-        {
-          id: Date.now(),
-          text: newPrompt
-        },
-        ...deduplicatedHistory
-      ];
-
-      return nextHistory.slice(0, 3);
-    });
-  };
-
-  const requestGenerate = async (inputText) => {
-    const trimmedInput = inputText.trim();
-
-    if (!trimmedInput) {
-      setErrorMessage("아이디어 또는 요청사항을 먼저 입력해 주세요.");
+  const handleGenerate = async () => {
+    if (!topic.trim()) {
+      setErrorMessage("주제는 반드시 입력해 주세요.");
       setGeneratedPrompt("");
       return;
     }
 
     setIsGenerating(true);
     setErrorMessage("");
-    setCopyButtonText("복사하기");
     setGeneratedPrompt("");
+    setCopyButtonText("복사하기");
 
     try {
       const response = await fetch("/api/generate", {
@@ -67,7 +54,16 @@ function App() {
         headers: {
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ prompt: trimmedInput })
+        body: JSON.stringify({
+          topic: topic.trim(),
+          details: details.trim(),
+          mustInclude: mustInclude.trim(),
+          outputLanguage,
+          outputFormat,
+          outputLength,
+          tone,
+          audienceLevel
+        })
       });
 
       const data = await response.json();
@@ -76,24 +72,13 @@ function App() {
         throw new Error(data.error || "프롬프트 생성에 실패했습니다.");
       }
 
-      const nextPrompt = data.result || "생성 결과가 비어 있습니다.";
-
-      setGeneratedPrompt(nextPrompt);
-      pushHistory(nextPrompt);
+      setGeneratedPrompt(data.result || "");
     } catch (error) {
       console.error(error);
       setErrorMessage("프롬프트 생성 중 오류가 발생했습니다.");
     } finally {
       setIsGenerating(false);
     }
-  };
-
-  const handleGenerate = async () => {
-    await requestGenerate(userInput);
-  };
-
-  const handleRegenerate = async () => {
-    await requestGenerate(userInput);
   };
 
   const handleCopy = async () => {
@@ -116,42 +101,52 @@ function App() {
     }
   };
 
-  const handleSelectHistory = (historyText) => {
-    setGeneratedPrompt(historyText);
-    setCopyButtonText("복사하기");
-  };
-
   return (
     <div style={styles.page}>
       <div style={styles.container}>
         <header style={styles.header}>
           <p style={styles.badge}>Prompt Maker</p>
-          <h1 style={styles.title}>입력하면 바로 쓰는 프롬프트로 정리</h1>
+          <h1 style={styles.title}>입력 내용과 결과 옵션을 분리해서 프롬프트 생성</h1>
           <p style={styles.description}>
-            짧게 적어도 됩니다. 아이디어, 목적, 대상, 말투를 적으면 더 좋은 결과가 나옵니다.
+            왼쪽에는 내가 AI에게 전달할 내용을 적고, 오른쪽에는 결과가 어떤 방식으로 나오게 할지 선택하세요.
           </p>
         </header>
 
         <main style={styles.mainGrid}>
           <section style={styles.card}>
             <div style={styles.sectionHeader}>
-              <h2 style={styles.sectionTitle}>1. 입력</h2>
-              <p style={styles.sectionHint}>원하는 작업을 자연스럽게 적어보세요.</p>
+              <h2 style={styles.sectionTitle}>내가 제공할 내용</h2>
+              <p style={styles.sectionHint}>
+                AI가 이해해야 하는 주제, 맥락, 포함 요소를 적습니다.
+              </p>
             </div>
 
+            <label style={styles.label}>주제</label>
             <textarea
-              value={userInput}
-              onChange={(event) => setUserInput(event.target.value)}
-              placeholder="예: 중학생 대상 과학 수업용으로, 뉴턴 운동법칙을 쉬운 비유와 예시 중심으로 설명하는 프롬프트를 만들어줘"
-              style={styles.textarea}
+              value={topic}
+              onChange={(event) => setTopic(event.target.value)}
+              placeholder="예: 중학생 대상 과학 수업용으로 뉴턴 운동법칙을 쉽게 설명"
+              style={styles.inputBox}
             />
 
-            <p style={styles.sessionNote}>
-              자동 저장되지 않습니다. 현재 입력 내용은 새로고침 전까지만 유지됩니다.
-            </p>
+            <label style={styles.label}>추가 설명 / 맥락</label>
+            <textarea
+              value={details}
+              onChange={(event) => setDetails(event.target.value)}
+              placeholder="예: 쉬운 비유를 포함하고, 실생활 예시 2개를 넣고, 어려운 수식은 최소화"
+              style={styles.inputBox}
+            />
+
+            <label style={styles.label}>반드시 포함할 요소</label>
+            <textarea
+              value={mustInclude}
+              onChange={(event) => setMustInclude(event.target.value)}
+              placeholder="예: 관성, 가속도, 힘의 관계 / 일상 예시 / 교사용 질문 2개"
+              style={styles.inputBox}
+            />
 
             <div style={styles.examplesWrap}>
-              {examplePrompts.map((exampleText, index) => (
+              {exampleTopics.map((exampleText, index) => (
                 <button
                   key={index}
                   onClick={() => handleExampleClick(exampleText)}
@@ -161,6 +156,64 @@ function App() {
                   {exampleText}
                 </button>
               ))}
+            </div>
+          </section>
+
+          <section style={styles.card}>
+            <div style={styles.sectionHeader}>
+              <h2 style={styles.sectionTitle}>결과 옵션</h2>
+              <p style={styles.sectionHint}>
+                생성된 프롬프트를 다른 AI에 붙여넣었을 때 어떤 결과가 나오게 할지 선택합니다.
+              </p>
+            </div>
+
+            <div style={styles.optionGrid}>
+              <div>
+                <label style={styles.label}>출력 언어</label>
+                <select value={outputLanguage} onChange={(e) => setOutputLanguage(e.target.value)} style={styles.selectBox}>
+                  <option value="ko">한국어</option>
+                  <option value="en">English</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={styles.label}>결과 형식</label>
+                <select value={outputFormat} onChange={(e) => setOutputFormat(e.target.value)} style={styles.selectBox}>
+                  <option value="explain">설명형</option>
+                  <option value="bullet">불릿 요약</option>
+                  <option value="step">단계별 가이드</option>
+                  <option value="table">표 형식</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={styles.label}>길이</label>
+                <select value={outputLength} onChange={(e) => setOutputLength(e.target.value)} style={styles.selectBox}>
+                  <option value="short">짧게</option>
+                  <option value="medium">보통</option>
+                  <option value="long">자세히</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={styles.label}>말투</label>
+                <select value={tone} onChange={(e) => setTone(e.target.value)} style={styles.selectBox}>
+                  <option value="neutral">중립적</option>
+                  <option value="friendly">친절한</option>
+                  <option value="professional">전문적</option>
+                  <option value="persuasive">설득형</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={styles.label}>대상 수준</label>
+                <select value={audienceLevel} onChange={(e) => setAudienceLevel(e.target.value)} style={styles.selectBox}>
+                  <option value="general">일반인</option>
+                  <option value="student">중고등학생</option>
+                  <option value="college">대학생</option>
+                  <option value="expert">전문가</option>
+                </select>
+              </div>
             </div>
 
             <div
@@ -180,40 +233,9 @@ function App() {
                   cursor: isGenerating ? "not-allowed" : "pointer"
                 }}
               >
-                {isGenerating ? "생성 중..." : "2. 생성하기"}
+                {isGenerating ? "생성 중..." : "프롬프트 생성"}
               </button>
-            </div>
 
-            {errorMessage && <p style={styles.errorText}>{errorMessage}</p>}
-          </section>
-
-          <section style={styles.card}>
-            <div style={styles.sectionHeader}>
-              <h2 style={styles.sectionTitle}>3. 결과</h2>
-              <p style={styles.sectionHint}>생성된 프롬프트를 확인하고 바로 복사하거나 다시 생성하세요.</p>
-            </div>
-
-            <div style={styles.resultBox}>
-              {generatedPrompt ? (
-                <pre style={styles.resultText}>{generatedPrompt}</pre>
-              ) : (
-                <p style={styles.placeholderText}>
-                  아직 생성된 프롬프트가 없습니다. 왼쪽에서 입력 후 생성해 주세요.
-                </p>
-              )}
-            </div>
-
-            <p style={styles.sessionNote}>
-              생성 결과도 자동 저장되지 않으며, 새로고침하면 사라집니다.
-            </p>
-
-            <div
-              style={{
-                ...styles.actionRow,
-                flexDirection: isMobile ? "column" : "row",
-                alignItems: isMobile ? "stretch" : "center"
-              }}
-            >
               <button
                 onClick={handleCopy}
                 disabled={!generatedPrompt}
@@ -221,63 +243,35 @@ function App() {
                   ...styles.secondaryButton,
                   width: isMobile ? "100%" : "auto",
                   opacity: generatedPrompt ? 1 : 0.5,
-                  cursor: generatedPrompt ? "pointer" : "not-allowed",
-                  background:
-                    copyButtonText === "복사 완료" ? "#dcfce7" : "#ffffff",
-                  borderColor:
-                    copyButtonText === "복사 완료" ? "#86efac" : "#cbd5e1",
-                  color:
-                    copyButtonText === "복사 완료" ? "#166534" : "#111827"
+                  cursor: generatedPrompt ? "pointer" : "not-allowed"
                 }}
               >
                 {copyButtonText}
               </button>
-
-              <button
-                onClick={handleRegenerate}
-                disabled={!userInput.trim() || isGenerating}
-                style={{
-                  ...styles.secondaryButton,
-                  width: isMobile ? "100%" : "auto",
-                  opacity: !userInput.trim() || isGenerating ? 0.5 : 1,
-                  cursor:
-                    !userInput.trim() || isGenerating ? "not-allowed" : "pointer"
-                }}
-              >
-                다시 생성
-              </button>
             </div>
 
-            <div style={styles.historySection}>
-              <div style={styles.historyHeader}>
-                <h3 style={styles.historyTitle}>최근 결과</h3>
-                <p style={styles.historyHint}>최대 3개까지 임시로 보관됩니다.</p>
-              </div>
-
-              {promptHistory.length > 0 ? (
-                <div style={styles.historyList}>
-                  {promptHistory.map((historyItem, index) => (
-                    <button
-                      key={historyItem.id}
-                      onClick={() => handleSelectHistory(historyItem.text)}
-                      style={styles.historyCard}
-                      title="이 결과를 다시 보기"
-                    >
-                      <div style={styles.historyCardTop}>
-                        <span style={styles.historyBadge}>결과 {index + 1}</span>
-                      </div>
-                      <p style={styles.historyPreview}>{historyItem.text}</p>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p style={styles.historyEmpty}>
-                  생성된 결과가 생기면 최근 항목 3개가 여기에 표시됩니다.
-                </p>
-              )}
-            </div>
+            {errorMessage && <p style={styles.errorText}>{errorMessage}</p>}
           </section>
         </main>
+
+        <section style={{ ...styles.card, marginTop: "20px" }}>
+          <div style={styles.sectionHeader}>
+            <h2 style={styles.sectionTitle}>생성된 프롬프트</h2>
+            <p style={styles.sectionHint}>
+              아래 결과를 다른 AI에 그대로 붙여넣으면, 선택한 옵션 방향으로 답변이 나오도록 설계됩니다.
+            </p>
+          </div>
+
+          <div style={styles.resultBox}>
+            {generatedPrompt ? (
+              <pre style={styles.resultText}>{generatedPrompt}</pre>
+            ) : (
+              <p style={styles.placeholderText}>
+                아직 생성된 프롬프트가 없습니다. 입력 내용과 결과 옵션을 선택한 뒤 생성하세요.
+              </p>
+            )}
+          </div>
+        </section>
       </div>
     </div>
   );
@@ -291,7 +285,7 @@ const styles = {
     padding: "24px"
   },
   container: {
-    maxWidth: "1100px",
+    maxWidth: "1200px",
     margin: "0 auto"
   },
   header: {
@@ -316,14 +310,14 @@ const styles = {
   },
   description: {
     margin: 0,
-    maxWidth: "720px",
+    maxWidth: "760px",
     color: "#4b5563",
     fontSize: "16px",
     lineHeight: 1.6
   },
   mainGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
+    gridTemplateColumns: "repeat(auto-fit, minmax(340px, 1fr))",
     gap: "20px"
   },
   card: {
@@ -343,32 +337,48 @@ const styles = {
   sectionHint: {
     margin: 0,
     color: "#6b7280",
-    fontSize: "14px"
+    fontSize: "14px",
+    lineHeight: 1.5
   },
-  textarea: {
+  label: {
+    display: "block",
+    marginTop: "14px",
+    marginBottom: "8px",
+    fontSize: "14px",
+    fontWeight: 700,
+    color: "#334155"
+  },
+  inputBox: {
     width: "100%",
-    minHeight: "220px",
-    padding: "16px",
+    minHeight: "92px",
+    padding: "14px",
     borderRadius: "12px",
     border: "1px solid #d1d5db",
-    fontSize: "15px",
+    fontSize: "14px",
     lineHeight: 1.6,
     resize: "vertical",
     outline: "none",
     boxSizing: "border-box"
   },
-  sessionNote: {
-    marginTop: "10px",
-    marginBottom: 0,
-    color: "#64748b",
-    fontSize: "13px",
-    lineHeight: 1.5
+  selectBox: {
+    width: "100%",
+    padding: "12px 14px",
+    borderRadius: "12px",
+    border: "1px solid #d1d5db",
+    fontSize: "14px",
+    background: "#ffffff",
+    boxSizing: "border-box"
+  },
+  optionGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
+    gap: "14px"
   },
   examplesWrap: {
     display: "flex",
     flexDirection: "column",
     gap: "10px",
-    marginTop: "12px"
+    marginTop: "16px"
   },
   exampleButton: {
     textAlign: "left",
@@ -386,7 +396,7 @@ const styles = {
     display: "flex",
     alignItems: "center",
     gap: "12px",
-    marginTop: "16px",
+    marginTop: "20px",
     flexWrap: "wrap"
   },
   primaryButton: {
@@ -408,7 +418,7 @@ const styles = {
     fontWeight: 700
   },
   resultBox: {
-    minHeight: "220px",
+    minHeight: "240px",
     borderRadius: "12px",
     background: "#f8fafc",
     border: "1px solid #e5e7eb",
@@ -433,69 +443,6 @@ const styles = {
     marginBottom: 0,
     color: "#dc2626",
     fontSize: "14px"
-  },
-  historySection: {
-    marginTop: "24px",
-    borderTop: "1px solid #e5e7eb",
-    paddingTop: "20px"
-  },
-  historyHeader: {
-    marginBottom: "12px"
-  },
-  historyTitle: {
-    margin: 0,
-    marginBottom: "4px",
-    fontSize: "18px"
-  },
-  historyHint: {
-    margin: 0,
-    color: "#6b7280",
-    fontSize: "13px"
-  },
-  historyList: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px"
-  },
-  historyCard: {
-    textAlign: "left",
-    width: "100%",
-    border: "1px solid #dbe4f0",
-    borderRadius: "12px",
-    background: "#f8fbff",
-    padding: "12px",
-    cursor: "pointer"
-  },
-  historyCardTop: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "8px"
-  },
-  historyBadge: {
-    display: "inline-block",
-    borderRadius: "999px",
-    background: "#dbeafe",
-    color: "#1d4ed8",
-    padding: "4px 8px",
-    fontSize: "12px",
-    fontWeight: 700
-  },
-  historyPreview: {
-    margin: 0,
-    color: "#334155",
-    fontSize: "14px",
-    lineHeight: 1.6,
-    display: "-webkit-box",
-    WebkitLineClamp: 3,
-    WebkitBoxOrient: "vertical",
-    overflow: "hidden"
-  },
-  historyEmpty: {
-    margin: 0,
-    color: "#6b7280",
-    fontSize: "14px",
-    lineHeight: 1.6
   }
 };
 
