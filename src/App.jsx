@@ -15,6 +15,7 @@ function App() {
   const [outputLength, setOutputLength] = useState("medium");
   const [tone, setTone] = useState("friendly");
   const [audienceLevel, setAudienceLevel] = useState("general");
+  const [purpose, setPurpose] = useState("learning");
 
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -62,7 +63,8 @@ function App() {
           outputFormat,
           outputLength,
           tone,
-          audienceLevel
+          audienceLevel,
+          purpose
         })
       });
 
@@ -212,6 +214,17 @@ function App() {
                   <option value="student">중고등학생</option>
                   <option value="college">대학생</option>
                   <option value="expert">전문가</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={styles.label}>출력 목적</label>
+                <select value={purpose} onChange={(e) => setPurpose(e.target.value)} style={styles.selectBox}>
+                  <option value="learning">학습용</option>
+                  <option value="blog">블로그용</option>
+                  <option value="presentation">발표용</option>
+                  <option value="work">업무용</option>
+                  <option value="sns">SNS용</option>
                 </select>
               </div>
             </div>
