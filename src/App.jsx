@@ -585,6 +585,8 @@ function App() {
     }
   };
 
+  const styles = getStyles(isMobile);
+
   return (
     <>
       <div
@@ -946,7 +948,7 @@ function App() {
   );
 }
 
-const styles = {
+const getStyles = (isMobile) => ({
   page: {
     minHeight: "100vh",
     background: "#f6f7fb",
@@ -1329,7 +1331,7 @@ const styles = {
   },
   resetImpactCompareRow: {
     display: "grid",
-    gridTemplateColumns: "1fr auto 1fr",
+    gridTemplateColumns: isMobile ? "1fr" : "1fr auto 1fr",
     alignItems: "start",
     gap: "8px"
   },
@@ -1359,7 +1361,9 @@ const styles = {
     fontSize: "13px",
     fontWeight: 700,
     color: "#94a3b8",
-    paddingTop: "20px"
+    paddingTop: isMobile ? "0" : "20px",
+    justifySelf: isMobile ? "start" : "center",
+    transform: isMobile ? "rotate(90deg)" : "none"
   },
   modalButtonRow: {
     display: "flex",
@@ -1386,6 +1390,6 @@ const styles = {
     fontSize: "14px",
     fontWeight: 700
   }
-};
+});
 
 export default App;
