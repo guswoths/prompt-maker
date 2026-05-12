@@ -6,6 +6,12 @@ const exampleTopics = [
   "유튜브 쇼츠용 30초 대본 초안 만들기"
 ];
 
+const defaultInputState = {
+  topic: "",
+  details: "",
+  mustInclude: ""
+};
+
 const defaultOptionState = {
   outputLanguage: "ko",
   outputFormat: "step",
@@ -119,9 +125,9 @@ const purposePresets = [
 ];
 
 function App() {
-  const [topic, setTopic] = useState("");
-  const [details, setDetails] = useState("");
-  const [mustInclude, setMustInclude] = useState("");
+  const [topic, setTopic] = useState(defaultInputState.topic);
+  const [details, setDetails] = useState(defaultInputState.details);
+  const [mustInclude, setMustInclude] = useState(defaultInputState.mustInclude);
   const [outputLanguage, setOutputLanguage] = useState(defaultOptionState.outputLanguage);
   const [outputFormat, setOutputFormat] = useState(defaultOptionState.outputFormat);
   const [outputLength, setOutputLength] = useState(defaultOptionState.outputLength);
@@ -183,6 +189,14 @@ function App() {
     );
   }, [outputLanguage, outputFormat, outputLength, tone, audienceLevel, purpose]);
 
+  const isDefaultInputState = useMemo(() => {
+    return (
+      topic === defaultInputState.topic &&
+      details === defaultInputState.details &&
+      mustInclude === defaultInputState.mustInclude
+    );
+  }, [topic, details, mustInclude]);
+
   const handleExampleClick = (exampleText) => {
     setTopic(exampleText);
     setErrorMessage("");
@@ -204,6 +218,13 @@ function App() {
     setTone(defaultOptionState.tone);
     setAudienceLevel(defaultOptionState.audienceLevel);
     setPurpose(defaultOptionState.purpose);
+  };
+
+  const resetInputContent = () => {
+    setTopic(defaultInputState.topic);
+    setDetails(defaultInputState.details);
+    setMustInclude(defaultInputState.mustInclude);
+    setErrorMessage("");
   };
 
   const handleGenerate = async () => {
@@ -286,10 +307,27 @@ function App() {
         <main style={styles.mainGrid}>
           <section style={styles.card}>
             <div style={styles.sectionHeader}>
-              <h2 style={styles.sectionTitle}>내가 제공할 내용</h2>
-              <p style={styles.sectionHint}>
-                AI가 이해해야 하는 주제, 맥락, 포함 요소를 적습니다.
-              </p>
+              <div style={styles.sectionHeaderTop}>
+                <div>
+                  <h2 style={styles.sectionTitle}>내가 제공할 내용</h2>
+                  <p style={styles.sectionHint}>
+                    AI가 이해해야 하는 주제, 맥락, 포함 요소를 적습니다.
+                  </p>
+                </div>
+
+                <button
+                  onClick={resetInputContent}
+                  disabled={isDefaultInputState}
+                  style={{
+                    ...styles.resetButton,
+                    opacity: isDefaultInputState ? 0.45 : 1,
+                    cursor: isDefaultInputState ? "not-allowed" : "pointer"
+                  }}
+                  title="입력 내용을 초기 상태로 되돌리기"
+                >
+                  입력 초기화
+                </button>
+              </div>
             </div>
 
             <label style={styles.label}>주제</label>
@@ -567,6 +605,13 @@ const styles = {
   },
   sectionHeader: {
     marginBottom: "16px"
+  },
+  sectionHeaderTop: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: "12px",
+    flexWrap: "wrap"
   },
   sectionTitle: {
     margin: 0,
