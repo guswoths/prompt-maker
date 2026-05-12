@@ -1017,6 +1017,50 @@ function App() {
               )}
             </div>
           </section>
+
+          <section style={{ ...styles.card, marginTop: "20px" }}>
+            <div style={styles.sectionHeader}>
+              <h2 style={styles.sectionTitle}>이용 안내</h2>
+              <p style={styles.sectionHint}>
+                서비스 이용과 관련된 개인정보 처리 기준 및 문의 방법을 안내합니다.
+              </p>
+            </div>
+
+            <div style={styles.infoGrid}>
+              <article style={styles.infoCard}>
+                <h3 style={styles.infoTitle}>개인정보처리방침</h3>
+                <p style={styles.infoText}>
+                  프롬프트 메이커는 사용자가 입력한 주제, 추가 설명, 반드시 포함할 요소,
+                  결과 옵션 정보를 프롬프트 생성 기능 제공을 위한 범위에서만 처리합니다.
+                </p>
+                <p style={styles.infoText}>
+                  입력한 내용은 프롬프트 생성 결과를 제공하기 위한 요청 처리 과정에서 사용되며,
+                  서비스 안정화와 오류 대응을 위해 일시적으로 확인될 수 있습니다.
+                </p>
+                <p style={styles.infoText}>
+                  주민등록번호, 비밀번호, 금융정보, 건강정보 등 민감한 개인정보는 입력하지
+                  않는 것을 권장합니다.
+                </p>
+              </article>
+
+              <article style={styles.infoCard}>
+                <h3 style={styles.infoTitle}>문의 방법</h3>
+                <p style={styles.infoText}>
+                  서비스 오류, 개선 제안, 이용 문의는 아래 이메일로 보내주세요.
+                </p>
+                <p style={styles.infoText}>
+                  문의 이메일:{" "}
+                  <a href="mailto:hjson7585@gmail.com" style={styles.infoLink}>
+                    hjson7585@gmail.com
+                  </a>
+                </p>
+                <p style={styles.infoText}>
+                  문의 시 사용 기기, 브라우저, 발생한 문제 상황을 함께 적어주시면 더 빠르게
+                  확인할 수 있습니다.
+                </p>
+              </article>
+            </div>
+          </section>
         </div>
       </div>
 
@@ -1529,6 +1573,37 @@ const getStyles = (isMobile) => ({
     marginBottom: 0,
     color: "#dc2626",
     fontSize: "14px"
+  },
+  infoGrid: {
+    display: "grid",
+    gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr",
+    gap: "16px"
+  },
+  infoCard: {
+    background: "#f8fafc",
+    border: "1px solid #e2e8f0",
+    borderRadius: "14px",
+    padding: "18px"
+  },
+  infoTitle: {
+    margin: 0,
+    marginBottom: "10px",
+    fontSize: "18px",
+    lineHeight: 1.4,
+    color: "#0f172a"
+  },
+  infoText: {
+    margin: 0,
+    marginTop: "10px",
+    fontSize: "14px",
+    lineHeight: 1.7,
+    color: "#475569"
+  },
+  infoLink: {
+    color: "#2563eb",
+    fontWeight: 700,
+    textDecoration: "none",
+    wordBreak: "break-all"
   },
   modalOverlay: {
     position: "fixed",
