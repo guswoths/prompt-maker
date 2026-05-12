@@ -146,20 +146,22 @@ function App() {
     ].join(" / ");
   }, [outputLanguage, outputFormat, outputLength, tone, audienceLevel, purpose]);
 
-  const activePresetKey = useMemo(() => {
-    const matchedPreset = purposePresets.find((preset) => {
-      return (
-        preset.values.outputLanguage === outputLanguage &&
-        preset.values.outputFormat === outputFormat &&
-        preset.values.outputLength === outputLength &&
-        preset.values.tone === tone &&
-        preset.values.audienceLevel === audienceLevel &&
-        preset.values.purpose === purpose
-      );
-    });
-
-    return matchedPreset ? matchedPreset.key : null;
+  const activePreset = useMemo(() => {
+    return (
+      purposePresets.find((preset) => {
+        return (
+          preset.values.outputLanguage === outputLanguage &&
+          preset.values.outputFormat === outputFormat &&
+          preset.values.outputLength === outputLength &&
+          preset.values.tone === tone &&
+          preset.values.audienceLevel === audienceLevel &&
+          preset.values.purpose === purpose
+        );
+      }) || null
+    );
   }, [outputLanguage, outputFormat, outputLength, tone, audienceLevel, purpose]);
+
+  const isCustomState = activePreset === null;
 
   const handleExampleClick = (exampleText) => {
     setTopic(exampleText);
@@ -308,10 +310,20 @@ function App() {
             </div>
 
             <div style={styles.presetSection}>
-              <p style={styles.presetLabel}>빠른 프리셋</p>
+              <div style={styles.presetHeader}>
+                <p style={styles.presetLabel}>빠른 프리셋</p>
+                {isCustomState ? (
+                  <span style={styles.customBadge}>사용자 정의 설정</span>
+                ) : (
+                  <span style={styles.activePresetBadge}>
+                    현재 프리셋: {activePreset.label}
+                  </span>
+                )}
+              </div>
+
               <div style={styles.presetWrap}>
                 {purposePresets.map((preset) => {
-                  const isActive = activePresetKey === preset.key;
+                  const isActive = activePreset?.key === preset.key;
 
                   return (
                     <button
@@ -555,12 +567,38 @@ const styles = {
   presetSection: {
     marginBottom: "16px"
   },
+  presetHeader: {
+    display: "flex",
+    flexWrap: "wrap",
+    alignItems: "center",
+    gap: "10px",
+    marginBottom: "10px"
+  },
   presetLabel: {
     margin: 0,
-    marginBottom: "10px",
     fontSize: "14px",
     fontWeight: 700,
     color: "#334155"
+  },
+  customBadge: {
+    display: "inline-block",
+    borderRadius: "999px",
+    background: "#fff7ed",
+    color: "#c2410c",
+    border: "1px solid #fdba74",
+    padding: "6px 10px",
+    fontSize: "12px",
+    fontWeight: 700
+  },
+  activePresetBadge: {
+    display: "inline-block",
+    borderRadius: "999px",
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    border: "1px solid #bfdbfe",
+    padding: "6px 10px",
+    fontSize: "12px",
+    fontWeight: 700
   },
   presetWrap: {
     display: "flex",
