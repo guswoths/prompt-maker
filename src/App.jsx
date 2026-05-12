@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const exampleTopics = [
   "중학생 대상 과학 수업용으로 뉴턴 운동법칙 설명",
@@ -140,6 +140,10 @@ function App() {
   const [errorMessage, setErrorMessage] = useState("");
   const [copyButtonText, setCopyButtonText] = useState("복사하기");
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 640);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+
+  const cancelResetButtonRef = useRef(null);
+  const confirmResetButtonRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -149,6 +153,33 @@ function App() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  useEffect(() => {
+    if (!isResetModalOpen) {
+      return undefined;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const timer = window.setTimeout(() => {
+      cancelResetButtonRef.current?.focus();
+    }, 0);
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setIsResetModalOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.clearTimeout(timer);
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isResetModalOpen]);
 
   const selectedOptionSummary = useMemo(() => {
     return [
@@ -243,6 +274,18 @@ function App() {
     setErrorMessage("");
   };
 
+  const openResetModal = () => {
+    if (isInitialAppState || isGenerating) {
+      return;
+    }
+
+    setIsResetModalOpen(true);
+  };
+
+  const closeResetModal = () => {
+    setIsResetModalOpen(false);
+  };
+
   const resetAll = () => {
     setTopic(defaultInputState.topic);
     setDetails(defaultInputState.details);
@@ -258,6 +301,7 @@ function App() {
     setGeneratedPrompt("");
     setErrorMessage("");
     setCopyButtonText("복사하기");
+    setIsResetModalOpen(false);
   };
 
   const handleGenerate = async () => {
@@ -327,283 +371,330 @@ function App() {
   };
 
   return (
-    <div style={styles.page}>
-      <div style={styles.container}>
-        <header style={styles.header}>
-          <div style={styles.headerTop}>
-            <div>
-              <p style={styles.badge}>Prompt Maker</p>
-              <h1 style={styles.title}>입력 내용과 결과 옵션을 분리해서 프롬프트 생성</h1>
-              <p style={styles.description}>
-                왼쪽에는 내가 AI에게 전달할 내용을 적고, 오른쪽에는 결과가 어떤 방식으로 나오게 할지 선택하세요.
-              </p>
-            </div>
-
-            <button
-              onClick={resetAll}
-              disabled={isInitialAppState || isGenerating}
-              style={{
-                ...styles.globalResetButton,
-                opacity: isInitialAppState || isGenerating ? 0.45 : 1,
-                cursor:
-                  isInitialAppState || isGenerating ? "not-allowed" : "pointer"
-              }}
-              title="입력, 옵션, 결과를 모두 처음 상태로 되돌리기"
-            >
-              전체 초기화
-            </button>
-          </div>
-        </header>
-
-        <main style={styles.mainGrid}>
-          <section style={styles.card}>
-            <div style={styles.sectionHeader}>
-              <div style={styles.sectionHeaderTop}>
-                <div>
-                  <h2 style={styles.sectionTitle}>내가 제공할 내용</h2>
-                  <p style={styles.sectionHint}>
-                    AI가 이해해야 하는 주제, 맥락, 포함 요소를 적습니다.
-                  </p>
-                </div>
-
-                <button
-                  onClick={resetInputContent}
-                  disabled={isDefaultInputState || isGenerating}
-                  style={{
-                    ...styles.resetButton,
-                    opacity: isDefaultInputState || isGenerating ? 0.45 : 1,
-                    cursor:
-                      isDefaultInputState || isGenerating ? "not-allowed" : "pointer"
-                  }}
-                  title="입력 내용을 초기 상태로 되돌리기"
-                >
-                  입력 초기화
-                </button>
+    <>
+      <div style={styles.page}>
+        <div style={styles.container}>
+          <header style={styles.header}>
+            <div style={styles.headerTop}>
+              <div>
+                <p style={styles.badge}>Prompt Maker</p>
+                <h1 style={styles.title}>입력 내용과 결과 옵션을 분리해서 프롬프트 생성</h1>
+                <p style={styles.description}>
+                  왼쪽에는 내가 AI에게 전달할 내용을 적고, 오른쪽에는 결과가 어떤 방식으로 나오게 할지 선택하세요.
+                </p>
               </div>
+
+              <button
+                onClick={openResetModal}
+                disabled={isInitialAppState || isGenerating}
+                style={{
+                  ...styles.globalResetButton,
+                  opacity: isInitialAppState || isGenerating ? 0.45 : 1,
+                  cursor:
+                    isInitialAppState || isGenerating ? "not-allowed" : "pointer"
+                }}
+                title="입력, 옵션, 결과를 모두 처음 상태로 되돌리기"
+              >
+                전체 초기화
+              </button>
             </div>
+          </header>
 
-            <label style={styles.label}>주제</label>
-            <textarea
-              value={topic}
-              onChange={(event) => setTopic(event.target.value)}
-              placeholder="예: 중학생 대상 과학 수업용으로 뉴턴 운동법칙을 쉽게 설명"
-              style={styles.inputBox}
-            />
-
-            <label style={styles.label}>추가 설명 / 맥락</label>
-            <textarea
-              value={details}
-              onChange={(event) => setDetails(event.target.value)}
-              placeholder="예: 쉬운 비유를 포함하고, 실생활 예시 2개를 넣고, 어려운 수식은 최소화"
-              style={styles.inputBox}
-            />
-
-            <label style={styles.label}>반드시 포함할 요소</label>
-            <textarea
-              value={mustInclude}
-              onChange={(event) => setMustInclude(event.target.value)}
-              placeholder="예: 관성, 가속도, 힘의 관계 / 일상 예시 / 교사용 질문 2개"
-              style={styles.inputBox}
-            />
-
-            <div style={styles.examplesWrap}>
-              {exampleTopics.map((exampleText, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleExampleClick(exampleText)}
-                  style={styles.exampleButton}
-                  title={exampleText}
-                >
-                  {exampleText}
-                </button>
-              ))}
-            </div>
-          </section>
-
-          <section style={styles.card}>
-            <div style={styles.sectionHeader}>
-              <h2 style={styles.sectionTitle}>결과 옵션</h2>
-              <p style={styles.sectionHint}>
-                생성된 프롬프트를 다른 AI에 붙여넣었을 때 어떤 결과가 나오게 할지 선택합니다.
-              </p>
-            </div>
-
-            <div style={styles.presetSection}>
-              <div style={styles.presetHeader}>
-                <p style={styles.presetLabel}>빠른 프리셋</p>
-                <div style={styles.presetMetaWrap}>
-                  {isCustomState ? (
-                    <span style={styles.customBadge}>사용자 정의 설정</span>
-                  ) : (
-                    <span style={styles.activePresetBadge}>
-                      현재 프리셋: {activePreset.label}
-                    </span>
-                  )}
+          <main style={styles.mainGrid}>
+            <section style={styles.card}>
+              <div style={styles.sectionHeader}>
+                <div style={styles.sectionHeaderTop}>
+                  <div>
+                    <h2 style={styles.sectionTitle}>내가 제공할 내용</h2>
+                    <p style={styles.sectionHint}>
+                      AI가 이해해야 하는 주제, 맥락, 포함 요소를 적습니다.
+                    </p>
+                  </div>
 
                   <button
-                    onClick={resetToDefaultOptions}
-                    disabled={isDefaultOptionState || isGenerating}
+                    onClick={resetInputContent}
+                    disabled={isDefaultInputState || isGenerating}
                     style={{
                       ...styles.resetButton,
-                      opacity: isDefaultOptionState || isGenerating ? 0.45 : 1,
+                      opacity: isDefaultInputState || isGenerating ? 0.45 : 1,
                       cursor:
-                        isDefaultOptionState || isGenerating ? "not-allowed" : "pointer"
+                        isDefaultInputState || isGenerating ? "not-allowed" : "pointer"
                     }}
-                    title="기본 추천 옵션으로 되돌리기"
+                    title="입력 내용을 초기 상태로 되돌리기"
                   >
-                    기본값으로 초기화
+                    입력 초기화
                   </button>
                 </div>
               </div>
 
-              <div style={styles.presetWrap}>
-                {purposePresets.map((preset) => {
-                  const isActive = activePreset?.key === preset.key;
+              <label style={styles.label}>주제</label>
+              <textarea
+                value={topic}
+                onChange={(event) => setTopic(event.target.value)}
+                placeholder="예: 중학생 대상 과학 수업용으로 뉴턴 운동법칙을 쉽게 설명"
+                style={styles.inputBox}
+              />
 
-                  return (
-                    <button
-                      key={preset.key}
-                      onClick={() => applyPreset(preset.values)}
-                      style={{
-                        ...styles.presetButton,
-                        ...(isActive ? styles.presetButtonActive : {})
-                      }}
-                      title={`${preset.label} 적용`}
-                      aria-pressed={isActive}
-                    >
-                      <span style={styles.presetButtonText}>
-                        {isActive ? "✓ " : ""}
-                        {preset.label}
+              <label style={styles.label}>추가 설명 / 맥락</label>
+              <textarea
+                value={details}
+                onChange={(event) => setDetails(event.target.value)}
+                placeholder="예: 쉬운 비유를 포함하고, 실생활 예시 2개를 넣고, 어려운 수식은 최소화"
+                style={styles.inputBox}
+              />
+
+              <label style={styles.label}>반드시 포함할 요소</label>
+              <textarea
+                value={mustInclude}
+                onChange={(event) => setMustInclude(event.target.value)}
+                placeholder="예: 관성, 가속도, 힘의 관계 / 일상 예시 / 교사용 질문 2개"
+                style={styles.inputBox}
+              />
+
+              <div style={styles.examplesWrap}>
+                {exampleTopics.map((exampleText, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleExampleClick(exampleText)}
+                    style={styles.exampleButton}
+                    title={exampleText}
+                  >
+                    {exampleText}
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            <section style={styles.card}>
+              <div style={styles.sectionHeader}>
+                <h2 style={styles.sectionTitle}>결과 옵션</h2>
+                <p style={styles.sectionHint}>
+                  생성된 프롬프트를 다른 AI에 붙여넣었을 때 어떤 결과가 나오게 할지 선택합니다.
+                </p>
+              </div>
+
+              <div style={styles.presetSection}>
+                <div style={styles.presetHeader}>
+                  <p style={styles.presetLabel}>빠른 프리셋</p>
+                  <div style={styles.presetMetaWrap}>
+                    {isCustomState ? (
+                      <span style={styles.customBadge}>사용자 정의 설정</span>
+                    ) : (
+                      <span style={styles.activePresetBadge}>
+                        현재 프리셋: {activePreset.label}
                       </span>
+                    )}
+
+                    <button
+                      onClick={resetToDefaultOptions}
+                      disabled={isDefaultOptionState || isGenerating}
+                      style={{
+                        ...styles.resetButton,
+                        opacity: isDefaultOptionState || isGenerating ? 0.45 : 1,
+                        cursor:
+                          isDefaultOptionState || isGenerating ? "not-allowed" : "pointer"
+                      }}
+                      title="기본 추천 옵션으로 되돌리기"
+                    >
+                      기본값으로 초기화
                     </button>
-                  );
-                })}
-              </div>
-            </div>
+                  </div>
+                </div>
 
-            <div style={styles.optionGrid}>
-              <div>
-                <label style={styles.label}>출력 언어</label>
-                <select value={outputLanguage} onChange={(e) => setOutputLanguage(e.target.value)} style={styles.selectBox}>
-                  <option value="ko">한국어</option>
-                  <option value="en">English</option>
-                </select>
-              </div>
+                <div style={styles.presetWrap}>
+                  {purposePresets.map((preset) => {
+                    const isActive = activePreset?.key === preset.key;
 
-              <div>
-                <label style={styles.label}>결과 형식</label>
-                <select value={outputFormat} onChange={(e) => setOutputFormat(e.target.value)} style={styles.selectBox}>
-                  <option value="explain">설명형</option>
-                  <option value="bullet">불릿 요약</option>
-                  <option value="step">단계별 가이드</option>
-                  <option value="table">표 형식</option>
-                </select>
-              </div>
-
-              <div>
-                <label style={styles.label}>길이</label>
-                <select value={outputLength} onChange={(e) => setOutputLength(e.target.value)} style={styles.selectBox}>
-                  <option value="short">짧게</option>
-                  <option value="medium">보통</option>
-                  <option value="long">자세히</option>
-                </select>
+                    return (
+                      <button
+                        key={preset.key}
+                        onClick={() => applyPreset(preset.values)}
+                        style={{
+                          ...styles.presetButton,
+                          ...(isActive ? styles.presetButtonActive : {})
+                        }}
+                        title={`${preset.label} 적용`}
+                        aria-pressed={isActive}
+                      >
+                        <span style={styles.presetButtonText}>
+                          {isActive ? "✓ " : ""}
+                          {preset.label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              <div>
-                <label style={styles.label}>말투</label>
-                <select value={tone} onChange={(e) => setTone(e.target.value)} style={styles.selectBox}>
-                  <option value="neutral">중립적</option>
-                  <option value="friendly">친절한</option>
-                  <option value="professional">전문적</option>
-                  <option value="persuasive">설득형</option>
-                </select>
+              <div style={styles.optionGrid}>
+                <div>
+                  <label style={styles.label}>출력 언어</label>
+                  <select value={outputLanguage} onChange={(e) => setOutputLanguage(e.target.value)} style={styles.selectBox}>
+                    <option value="ko">한국어</option>
+                    <option value="en">English</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={styles.label}>결과 형식</label>
+                  <select value={outputFormat} onChange={(e) => setOutputFormat(e.target.value)} style={styles.selectBox}>
+                    <option value="explain">설명형</option>
+                    <option value="bullet">불릿 요약</option>
+                    <option value="step">단계별 가이드</option>
+                    <option value="table">표 형식</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={styles.label}>길이</label>
+                  <select value={outputLength} onChange={(e) => setOutputLength(e.target.value)} style={styles.selectBox}>
+                    <option value="short">짧게</option>
+                    <option value="medium">보통</option>
+                    <option value="long">자세히</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={styles.label}>말투</label>
+                  <select value={tone} onChange={(e) => setTone(e.target.value)} style={styles.selectBox}>
+                    <option value="neutral">중립적</option>
+                    <option value="friendly">친절한</option>
+                    <option value="professional">전문적</option>
+                    <option value="persuasive">설득형</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={styles.label}>대상 수준</label>
+                  <select value={audienceLevel} onChange={(e) => setAudienceLevel(e.target.value)} style={styles.selectBox}>
+                    <option value="general">일반인</option>
+                    <option value="student">중고등학생</option>
+                    <option value="college">대학생</option>
+                    <option value="expert">전문가</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={styles.label}>출력 목적</label>
+                  <select value={purpose} onChange={(e) => setPurpose(e.target.value)} style={styles.selectBox}>
+                    <option value="learning">학습용</option>
+                    <option value="blog">블로그용</option>
+                    <option value="presentation">발표용</option>
+                    <option value="work">업무용</option>
+                    <option value="sns">SNS용</option>
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label style={styles.label}>대상 수준</label>
-                <select value={audienceLevel} onChange={(e) => setAudienceLevel(e.target.value)} style={styles.selectBox}>
-                  <option value="general">일반인</option>
-                  <option value="student">중고등학생</option>
-                  <option value="college">대학생</option>
-                  <option value="expert">전문가</option>
-                </select>
+              <div style={styles.summaryBox}>
+                <p style={styles.summaryLabel}>현재 선택된 결과 옵션</p>
+                <p style={styles.summaryText}>{selectedOptionSummary}</p>
               </div>
 
-              <div>
-                <label style={styles.label}>출력 목적</label>
-                <select value={purpose} onChange={(e) => setPurpose(e.target.value)} style={styles.selectBox}>
-                  <option value="learning">학습용</option>
-                  <option value="blog">블로그용</option>
-                  <option value="presentation">발표용</option>
-                  <option value="work">업무용</option>
-                  <option value="sns">SNS용</option>
-                </select>
-              </div>
-            </div>
-
-            <div style={styles.summaryBox}>
-              <p style={styles.summaryLabel}>현재 선택된 결과 옵션</p>
-              <p style={styles.summaryText}>{selectedOptionSummary}</p>
-            </div>
-
-            <div
-              style={{
-                ...styles.actionRow,
-                flexDirection: isMobile ? "column" : "row",
-                alignItems: isMobile ? "stretch" : "center"
-              }}
-            >
-              <button
-                onClick={handleGenerate}
-                disabled={isGenerating}
+              <div
                 style={{
-                  ...styles.primaryButton,
-                  width: isMobile ? "100%" : "auto",
-                  opacity: isGenerating ? 0.7 : 1,
-                  cursor: isGenerating ? "not-allowed" : "pointer"
+                  ...styles.actionRow,
+                  flexDirection: isMobile ? "column" : "row",
+                  alignItems: isMobile ? "stretch" : "center"
                 }}
               >
-                {isGenerating ? "생성 중..." : "프롬프트 생성"}
-              </button>
+                <button
+                  onClick={handleGenerate}
+                  disabled={isGenerating}
+                  style={{
+                    ...styles.primaryButton,
+                    width: isMobile ? "100%" : "auto",
+                    opacity: isGenerating ? 0.7 : 1,
+                    cursor: isGenerating ? "not-allowed" : "pointer"
+                  }}
+                >
+                  {isGenerating ? "생성 중..." : "프롬프트 생성"}
+                </button>
 
-              <button
-                onClick={handleCopy}
-                disabled={!generatedPrompt}
-                style={{
-                  ...styles.secondaryButton,
-                  width: isMobile ? "100%" : "auto",
-                  opacity: generatedPrompt ? 1 : 0.5,
-                  cursor: generatedPrompt ? "pointer" : "not-allowed"
-                }}
-              >
-                {copyButtonText}
-              </button>
-            </div>
+                <button
+                  onClick={handleCopy}
+                  disabled={!generatedPrompt}
+                  style={{
+                    ...styles.secondaryButton,
+                    width: isMobile ? "100%" : "auto",
+                    opacity: generatedPrompt ? 1 : 0.5,
+                    cursor: generatedPrompt ? "pointer" : "not-allowed"
+                  }}
+                >
+                  {copyButtonText}
+                </button>
+              </div>
 
-            {errorMessage && <p style={styles.errorText}>{errorMessage}</p>}
-          </section>
-        </main>
+              {errorMessage && <p style={styles.errorText}>{errorMessage}</p>}
+            </section>
+          </main>
 
-        <section style={{ ...styles.card, marginTop: "20px" }}>
-          <div style={styles.sectionHeader}>
-            <h2 style={styles.sectionTitle}>생성된 프롬프트</h2>
-            <p style={styles.sectionHint}>
-              아래 결과를 다른 AI에 그대로 붙여넣으면, 선택한 옵션 방향으로 답변이 나오도록 설계됩니다.
-            </p>
-          </div>
-
-          <div style={styles.resultBox}>
-            {generatedPrompt ? (
-              <pre style={styles.resultText}>{generatedPrompt}</pre>
-            ) : (
-              <p style={styles.placeholderText}>
-                아직 생성된 프롬프트가 없습니다. 입력 내용과 결과 옵션을 선택한 뒤 생성하세요.
+          <section style={{ ...styles.card, marginTop: "20px" }}>
+            <div style={styles.sectionHeader}>
+              <h2 style={styles.sectionTitle}>생성된 프롬프트</h2>
+              <p style={styles.sectionHint}>
+                아래 결과를 다른 AI에 그대로 붙여넣으면, 선택한 옵션 방향으로 답변이 나오도록 설계됩니다.
               </p>
-            )}
-          </div>
-        </section>
+            </div>
+
+            <div style={styles.resultBox}>
+              {generatedPrompt ? (
+                <pre style={styles.resultText}>{generatedPrompt}</pre>
+              ) : (
+                <p style={styles.placeholderText}>
+                  아직 생성된 프롬프트가 없습니다. 입력 내용과 결과 옵션을 선택한 뒤 생성하세요.
+                </p>
+              )}
+            </div>
+          </section>
+        </div>
       </div>
-    </div>
+
+      {isResetModalOpen && (
+        <div
+          style={styles.modalOverlay}
+          onClick={closeResetModal}
+          aria-hidden="true"
+        >
+          <div
+            style={styles.modalCard}
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="reset-modal-title"
+            aria-describedby="reset-modal-description"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div style={styles.modalHeader}>
+              <p style={styles.modalBadge}>주의</p>
+              <h2 id="reset-modal-title" style={styles.modalTitle}>
+                전체 초기화를 진행할까요?
+              </h2>
+              <p id="reset-modal-description" style={styles.modalDescription}>
+                입력한 내용, 선택한 결과 옵션, 생성된 프롬프트, 오류 메시지와 복사 상태가 모두 처음 상태로 돌아갑니다.
+              </p>
+            </div>
+
+            <div style={styles.modalButtonRow}>
+              <button
+                ref={cancelResetButtonRef}
+                onClick={closeResetModal}
+                style={styles.modalCancelButton}
+              >
+                취소
+              </button>
+
+              <button
+                ref={confirmResetButtonRef}
+                onClick={resetAll}
+                style={styles.modalDangerButton}
+              >
+                모두 초기화
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -895,6 +986,75 @@ const styles = {
     marginBottom: 0,
     color: "#dc2626",
     fontSize: "14px"
+  },
+  modalOverlay: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(15, 23, 42, 0.45)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "20px",
+    zIndex: 1000
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: "460px",
+    background: "#ffffff",
+    borderRadius: "18px",
+    padding: "22px",
+    boxShadow: "0 24px 60px rgba(15, 23, 42, 0.28)"
+  },
+  modalHeader: {
+    marginBottom: "18px"
+  },
+  modalBadge: {
+    display: "inline-block",
+    margin: 0,
+    marginBottom: "10px",
+    padding: "6px 10px",
+    borderRadius: "999px",
+    background: "#fff1f2",
+    color: "#b91c1c",
+    fontSize: "12px",
+    fontWeight: 700
+  },
+  modalTitle: {
+    margin: 0,
+    marginBottom: "10px",
+    fontSize: "24px",
+    lineHeight: 1.3,
+    color: "#111827"
+  },
+  modalDescription: {
+    margin: 0,
+    color: "#4b5563",
+    fontSize: "14px",
+    lineHeight: 1.6
+  },
+  modalButtonRow: {
+    display: "flex",
+    justifyContent: "flex-end",
+    gap: "10px",
+    flexWrap: "wrap"
+  },
+  modalCancelButton: {
+    border: "1px solid #cbd5e1",
+    borderRadius: "12px",
+    background: "#ffffff",
+    color: "#111827",
+    padding: "11px 16px",
+    fontSize: "14px",
+    fontWeight: 700
+  },
+  modalDangerButton: {
+    border: "1px solid #dc2626",
+    borderRadius: "12px",
+    background: "#dc2626",
+    color: "#ffffff",
+    padding: "11px 16px",
+    fontSize: "14px",
+    fontWeight: 700
   }
 };
 
