@@ -146,6 +146,21 @@ function App() {
     ].join(" / ");
   }, [outputLanguage, outputFormat, outputLength, tone, audienceLevel, purpose]);
 
+  const activePresetKey = useMemo(() => {
+    const matchedPreset = purposePresets.find((preset) => {
+      return (
+        preset.values.outputLanguage === outputLanguage &&
+        preset.values.outputFormat === outputFormat &&
+        preset.values.outputLength === outputLength &&
+        preset.values.tone === tone &&
+        preset.values.audienceLevel === audienceLevel &&
+        preset.values.purpose === purpose
+      );
+    });
+
+    return matchedPreset ? matchedPreset.key : null;
+  }, [outputLanguage, outputFormat, outputLength, tone, audienceLevel, purpose]);
+
   const handleExampleClick = (exampleText) => {
     setTopic(exampleText);
     setErrorMessage("");
@@ -295,16 +310,27 @@ function App() {
             <div style={styles.presetSection}>
               <p style={styles.presetLabel}>빠른 프리셋</p>
               <div style={styles.presetWrap}>
-                {purposePresets.map((preset) => (
-                  <button
-                    key={preset.key}
-                    onClick={() => applyPreset(preset.values)}
-                    style={styles.presetButton}
-                    title={`${preset.label} 적용`}
-                  >
-                    {preset.label}
-                  </button>
-                ))}
+                {purposePresets.map((preset) => {
+                  const isActive = activePresetKey === preset.key;
+
+                  return (
+                    <button
+                      key={preset.key}
+                      onClick={() => applyPreset(preset.values)}
+                      style={{
+                        ...styles.presetButton,
+                        ...(isActive ? styles.presetButtonActive : {})
+                      }}
+                      title={`${preset.label} 적용`}
+                      aria-pressed={isActive}
+                    >
+                      <span style={styles.presetButtonText}>
+                        {isActive ? "✓ " : ""}
+                        {preset.label}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
@@ -549,7 +575,19 @@ const styles = {
     padding: "10px 14px",
     fontSize: "13px",
     fontWeight: 700,
-    cursor: "pointer"
+    cursor: "pointer",
+    boxShadow: "none",
+    transition: "all 0.15s ease"
+  },
+  presetButtonActive: {
+    background: "#2563eb",
+    color: "#ffffff",
+    border: "1px solid #2563eb",
+    boxShadow: "0 6px 18px rgba(37, 99, 235, 0.25)"
+  },
+  presetButtonText: {
+    display: "inline-block",
+    lineHeight: 1.2
   },
   optionGrid: {
     display: "grid",
