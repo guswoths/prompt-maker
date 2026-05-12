@@ -172,6 +172,9 @@ export default async function handler(req, res) {
     if (outputLanguage === "ko") {
       result = result
         .replace(/[一-龥]/g, "")
+        .replace(/[ぁ-ゔゞ゛゜ー]/gu, "")
+        .replace(/[ァ-ヺヾー]/gu, "")
+        .replace(/[・「」『』（）［］｛｝]/gu, "")
         .replace(/\s{2,}/g, " ")
         .replace(/\n{3,}/g, "\n\n")
         .trim();
