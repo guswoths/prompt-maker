@@ -301,104 +301,139 @@ function App() {
     );
   }, [topic, details, mustInclude]);
 
-  const changedInputFieldNames = useMemo(() => {
-    const changedFields = [];
+  const hasGeneratedPrompt = generatedPrompt.trim().length > 0;
+  const hasErrorMessage = errorMessage.trim().length > 0;
+  const hasCopiedState = copyButtonText !== "복사하기";
+
+  const buildPreviewText = (value) => {
+    const normalizedValue = String(value ?? "")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (!normalizedValue) {
+      return "(비어 있음)";
+    }
+
+    if (normalizedValue.length <= 48) {
+      return normalizedValue;
+    }
+
+    return `${normalizedValue.slice(0, 48)}...`;
+  };
+
+  const changedFieldPreviews = useMemo(() => {
+    const items = [];
 
     if (topic !== defaultInputState.topic) {
-      changedFields.push(inputFieldLabels.topic);
+      items.push({
+        label: inputFieldLabels.topic,
+        preview: buildPreviewText(topic)
+      });
     }
 
     if (details !== defaultInputState.details) {
-      changedFields.push(inputFieldLabels.details);
+      items.push({
+        label: inputFieldLabels.details,
+        preview: buildPreviewText(details)
+      });
     }
 
     if (mustInclude !== defaultInputState.mustInclude) {
-      changedFields.push(inputFieldLabels.mustInclude);
+      items.push({
+        label: inputFieldLabels.mustInclude,
+        preview: buildPreviewText(mustInclude)
+      });
     }
 
-    return changedFields;
-  }, [topic, details, mustInclude]);
-
-  const changedOptionFieldNames = useMemo(() => {
-    const changedFields = [];
-
     if (outputLanguage !== defaultOptionState.outputLanguage) {
-      changedFields.push(optionFieldLabels.outputLanguage);
+      items.push({
+        label: optionFieldLabels.outputLanguage,
+        preview: languageLabelMap[outputLanguage]
+      });
     }
 
     if (outputFormat !== defaultOptionState.outputFormat) {
-      changedFields.push(optionFieldLabels.outputFormat);
+      items.push({
+        label: optionFieldLabels.outputFormat,
+        preview: formatLabelMap[outputFormat]
+      });
     }
 
     if (outputLength !== defaultOptionState.outputLength) {
-      changedFields.push(optionFieldLabels.outputLength);
+      items.push({
+        label: optionFieldLabels.outputLength,
+        preview: lengthLabelMap[outputLength]
+      });
     }
 
     if (tone !== defaultOptionState.tone) {
-      changedFields.push(optionFieldLabels.tone);
+      items.push({
+        label: optionFieldLabels.tone,
+        preview: toneLabelMap[tone]
+      });
     }
 
     if (audienceLevel !== defaultOptionState.audienceLevel) {
-      changedFields.push(optionFieldLabels.audienceLevel);
+      items.push({
+        label: optionFieldLabels.audienceLevel,
+        preview: audienceLabelMap[audienceLevel]
+      });
     }
 
     if (purpose !== defaultOptionState.purpose) {
-      changedFields.push(optionFieldLabels.purpose);
+      items.push({
+        label: optionFieldLabels.purpose,
+        preview: purposeLabelMap[purpose]
+      });
     }
 
-    return changedFields;
+    if (hasGeneratedPrompt) {
+      items.push({
+        label: "생성된 프롬프트",
+        preview: buildPreviewText(generatedPrompt)
+      });
+    }
+
+    if (hasErrorMessage) {
+      items.push({
+        label: "오류 메시지",
+        preview: buildPreviewText(errorMessage)
+      });
+    }
+
+    if (hasCopiedState) {
+      items.push({
+        label: "복사 상태",
+        preview: copyButtonText
+      });
+    }
+
+    return items;
   }, [
+    topic,
+    details,
+    mustInclude,
     outputLanguage,
     outputFormat,
     outputLength,
     tone,
     audienceLevel,
-    purpose
-  ]);
-
-  const hasGeneratedPrompt = generatedPrompt.trim().length > 0;
-  const hasErrorMessage = errorMessage.trim().length > 0;
-  const hasCopiedState = copyButtonText !== "복사하기";
-
-  const resetImpactItems = useMemo(() => {
-    const items = [];
-
-    if (changedInputFieldNames.length > 0) {
-      items.push(...changedInputFieldNames);
-    }
-
-    if (changedOptionFieldNames.length > 0) {
-      items.push(...changedOptionFieldNames);
-    }
-
-    if (hasGeneratedPrompt) {
-      items.push("생성된 프롬프트");
-    }
-
-    if (hasErrorMessage) {
-      items.push("오류 메시지");
-    }
-
-    if (hasCopiedState) {
-      items.push("복사 상태");
-    }
-
-    return items;
-  }, [
-    changedInputFieldNames,
-    changedOptionFieldNames,
+    purpose,
+    generatedPrompt,
+    errorMessage,
+    copyButtonText,
     hasGeneratedPrompt,
     hasErrorMessage,
     hasCopiedState
   ]);
 
   const resetImpactSummary = useMemo(() => {
-    if (resetImpactItems.length === 0) {
+    if (changedFieldPreviews.length === 0) {
       return "현재 초기화할 항목이 없습니다.";
     }
 
-    return `현재 초기화 대상: ${resetImpactItems.join(", ")}`;
-  }, [resetImpactItems]);
+    return `현재 초기화 대상 ${changedFieldPreviews.length}개 항목`;
+  }, [changedFieldPreviews]);
 
   const isInitialAppState = useMemo(() => {
     return (
@@ -855,11 +890,12 @@ function App() {
                 <p style={styles.resetImpactLabel}>현재 지워질 항목</p>
                 <p style={styles.resetImpactSummary}>{resetImpactSummary}</p>
 
-                {resetImpactItems.length > 0 && (
+                {changedFieldPreviews.length > 0 && (
                   <ul style={styles.resetImpactList}>
-                    {resetImpactItems.map((item) => (
-                      <li key={item} style={styles.resetImpactListItem}>
-                        {item}
+                    {changedFieldPreviews.map((item) => (
+                      <li key={item.label} style={styles.resetImpactListItem}>
+                        <span style={styles.resetImpactItemLabel}>{item.label}</span>
+                        <span style={styles.resetImpactItemPreview}>{item.preview}</span>
                       </li>
                     ))}
                   </ul>
@@ -1191,7 +1227,7 @@ const styles = {
   },
   modalCard: {
     width: "100%",
-    maxWidth: "460px",
+    maxWidth: "520px",
     background: "#ffffff",
     borderRadius: "18px",
     padding: "22px",
@@ -1248,13 +1284,34 @@ const styles = {
   },
   resetImpactList: {
     margin: "10px 0 0 0",
-    paddingLeft: "18px",
-    color: "#334155"
+    paddingLeft: 0,
+    listStyle: "none",
+    color: "#334155",
+    display: "flex",
+    flexDirection: "column",
+    gap: "8px"
   },
   resetImpactListItem: {
-    marginBottom: "6px",
-    fontSize: "14px",
-    lineHeight: 1.5
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px",
+    padding: "10px 12px",
+    borderRadius: "10px",
+    background: "#ffffff",
+    border: "1px solid #e5e7eb"
+  },
+  resetImpactItemLabel: {
+    fontSize: "13px",
+    fontWeight: 700,
+    color: "#0f172a"
+  },
+  resetImpactItemPreview: {
+    fontSize: "13px",
+    lineHeight: 1.5,
+    color: "#475569",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis"
   },
   modalButtonRow: {
     display: "flex",
