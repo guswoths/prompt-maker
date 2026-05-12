@@ -61,6 +61,21 @@ const purposeLabelMap = {
   sns: "SNS용"
 };
 
+const inputFieldLabels = {
+  topic: "주제",
+  details: "추가 설명",
+  mustInclude: "반드시 포함할 요소"
+};
+
+const optionFieldLabels = {
+  outputLanguage: "출력 언어",
+  outputFormat: "결과 형식",
+  outputLength: "길이",
+  tone: "말투",
+  audienceLevel: "대상 수준",
+  purpose: "출력 목적"
+};
+
 const purposePresets = [
   {
     key: "learning",
@@ -286,27 +301,52 @@ function App() {
     );
   }, [topic, details, mustInclude]);
 
-  const changedInputCount = useMemo(() => {
-    const inputs = [
-      topic !== defaultInputState.topic,
-      details !== defaultInputState.details,
-      mustInclude !== defaultInputState.mustInclude
-    ];
+  const changedInputFieldNames = useMemo(() => {
+    const changedFields = [];
 
-    return inputs.filter(Boolean).length;
+    if (topic !== defaultInputState.topic) {
+      changedFields.push(inputFieldLabels.topic);
+    }
+
+    if (details !== defaultInputState.details) {
+      changedFields.push(inputFieldLabels.details);
+    }
+
+    if (mustInclude !== defaultInputState.mustInclude) {
+      changedFields.push(inputFieldLabels.mustInclude);
+    }
+
+    return changedFields;
   }, [topic, details, mustInclude]);
 
-  const changedOptionCount = useMemo(() => {
-    const options = [
-      outputLanguage !== defaultOptionState.outputLanguage,
-      outputFormat !== defaultOptionState.outputFormat,
-      outputLength !== defaultOptionState.outputLength,
-      tone !== defaultOptionState.tone,
-      audienceLevel !== defaultOptionState.audienceLevel,
-      purpose !== defaultOptionState.purpose
-    ];
+  const changedOptionFieldNames = useMemo(() => {
+    const changedFields = [];
 
-    return options.filter(Boolean).length;
+    if (outputLanguage !== defaultOptionState.outputLanguage) {
+      changedFields.push(optionFieldLabels.outputLanguage);
+    }
+
+    if (outputFormat !== defaultOptionState.outputFormat) {
+      changedFields.push(optionFieldLabels.outputFormat);
+    }
+
+    if (outputLength !== defaultOptionState.outputLength) {
+      changedFields.push(optionFieldLabels.outputLength);
+    }
+
+    if (tone !== defaultOptionState.tone) {
+      changedFields.push(optionFieldLabels.tone);
+    }
+
+    if (audienceLevel !== defaultOptionState.audienceLevel) {
+      changedFields.push(optionFieldLabels.audienceLevel);
+    }
+
+    if (purpose !== defaultOptionState.purpose) {
+      changedFields.push(optionFieldLabels.purpose);
+    }
+
+    return changedFields;
   }, [
     outputLanguage,
     outputFormat,
@@ -323,30 +363,30 @@ function App() {
   const resetImpactItems = useMemo(() => {
     const items = [];
 
-    if (changedInputCount > 0) {
-      items.push(`입력 내용 ${changedInputCount}개 항목`);
+    if (changedInputFieldNames.length > 0) {
+      items.push(...changedInputFieldNames);
     }
 
-    if (changedOptionCount > 0) {
-      items.push(`결과 옵션 ${changedOptionCount}개 항목`);
+    if (changedOptionFieldNames.length > 0) {
+      items.push(...changedOptionFieldNames);
     }
 
     if (hasGeneratedPrompt) {
-      items.push("생성된 프롬프트 1개");
+      items.push("생성된 프롬프트");
     }
 
     if (hasErrorMessage) {
-      items.push("오류 메시지 1개");
+      items.push("오류 메시지");
     }
 
     if (hasCopiedState) {
-      items.push("복사 상태 1개");
+      items.push("복사 상태");
     }
 
     return items;
   }, [
-    changedInputCount,
-    changedOptionCount,
+    changedInputFieldNames,
+    changedOptionFieldNames,
     hasGeneratedPrompt,
     hasErrorMessage,
     hasCopiedState
@@ -808,7 +848,7 @@ function App() {
                 전체 초기화를 진행할까요?
               </h2>
               <p id="reset-modal-description" style={styles.modalDescription}>
-                입력한 내용과 현재 상태가 처음 상태로 돌아갑니다.
+                아래 항목이 처음 상태로 돌아갑니다.
               </p>
 
               <div style={styles.resetImpactBox}>
