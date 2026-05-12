@@ -19,20 +19,19 @@ export default async function handler(req, res) {
     }
 
     const completion = await groq.chat.completions.create({
-      model: "llama3-8b-8192",
+      model: "llama-3.3-70b-versatile",
       messages: [
         {
           role: "system",
-          content:
-            "너는 사용자의 아이디어를 바탕으로 더 명확하고 실용적인 프롬프트를 만들어주는 도우미다."
+          content: "너는 사용자의 아이디어를 바탕으로 더 명확하고 실용적인 프롬프트를 만들어주는 도우미다."
         },
         {
           role: "user",
           content: prompt
         }
       ],
-      max_tokens: 512,
-      temperature: 0.7
+      temperature: 0.7,
+      max_tokens: 512
     });
 
     const result =
@@ -42,6 +41,9 @@ export default async function handler(req, res) {
     return res.status(200).json({ result });
   } catch (error) {
     console.error("Groq API error:", error);
-    return res.status(500).json({ error: "Internal Server Error" });
+    return res.status(500).json({
+      error: "Internal Server Error",
+      detail: error?.message || "Unknown error"
+    });
   }
 }
