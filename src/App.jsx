@@ -1,11 +1,32 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+const examplePrompts = [
+  "중학생도 이해할 수 있게 뉴턴 운동법칙을 쉬운 비유로 설명하는 수업용 프롬프트 작성",
+  "초보 개발자가 React와 Vite 차이를 빠르게 이해할 수 있도록 설명하는 프롬프트 작성",
+  "유튜브 쇼츠용으로 30초 안에 핵심만 전달하는 대본 생성 프롬프트 작성"
+];
 
 function App() {
   const [userInput, setUserInput] = useState("");
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [copyMessage, setCopyMessage] = useState("");
+  const [copyButtonText, setCopyButtonText] = useState("복사하기");
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 640);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 640);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  const handleExampleClick = (exampleText) => {
+    setUserInput(exampleText);
+    setErrorMessage("");
+  };
 
   const handleGenerate = async () => {
     const trimmedInput = userInput.trim();
@@ -18,7 +39,7 @@ function App() {
 
     setIsGenerating(true);
     setErrorMessage("");
-    setCopyMessage("");
+    setCopyButtonText("복사하기");
     setGeneratedPrompt("");
 
     try {
@@ -52,15 +73,15 @@ function App() {
 
     try {
       await navigator.clipboard.writeText(generatedPrompt);
-      setCopyMessage("복사 완료");
+      setCopyButtonText("복사 완료");
       setTimeout(() => {
-        setCopyMessage("");
+        setCopyButtonText("복사하기");
       }, 1500);
     } catch (error) {
       console.error(error);
-      setCopyMessage("복사 실패");
+      setCopyButtonText("복사 실패");
       setTimeout(() => {
-        setCopyMessage("");
+        setCopyButtonText("복사하기");
       }, 1500);
     }
   };
@@ -90,12 +111,31 @@ function App() {
               style={styles.textarea}
             />
 
-            <div style={styles.actionRow}>
+            <div style={styles.examplesWrap}>
+              {examplePrompts.map((exampleText, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleExampleClick(exampleText)}
+                  style={styles.exampleButton}
+                >
+                  예시 {index + 1}
+                </button>
+              ))}
+            </div>
+
+            <div
+              style={{
+                ...styles.actionRow,
+                flexDirection: isMobile ? "column" : "row",
+                alignItems: isMobile ? "stretch" : "center"
+              }}
+            >
               <button
                 onClick={handleGenerate}
                 disabled={isGenerating}
                 style={{
                   ...styles.primaryButton,
+                  width: isMobile ? "100%" : "auto",
                   opacity: isGenerating ? 0.7 : 1,
                   cursor: isGenerating ? "not-allowed" : "pointer"
                 }}
@@ -123,20 +163,31 @@ function App() {
               )}
             </div>
 
-            <div style={styles.actionRow}>
+            <div
+              style={{
+                ...styles.actionRow,
+                flexDirection: isMobile ? "column" : "row",
+                alignItems: isMobile ? "stretch" : "center"
+              }}
+            >
               <button
                 onClick={handleCopy}
                 disabled={!generatedPrompt}
                 style={{
                   ...styles.secondaryButton,
+                  width: isMobile ? "100%" : "auto",
                   opacity: generatedPrompt ? 1 : 0.5,
-                  cursor: generatedPrompt ? "pointer" : "not-allowed"
+                  cursor: generatedPrompt ? "pointer" : "not-allowed",
+                  background:
+                    copyButtonText === "복사 완료" ? "#dcfce7" : "#ffffff",
+                  borderColor:
+                    copyButtonText === "복사 완료" ? "#86efac" : "#cbd5e1",
+                  color:
+                    copyButtonText === "복사 완료" ? "#166534" : "#111827"
                 }}
               >
-                복사하기
+                {copyButtonText}
               </button>
-
-              {copyMessage && <span style={styles.copyMessage}>{copyMessage}</span>}
             </div>
           </section>
         </main>
@@ -219,6 +270,22 @@ const styles = {
     outline: "none",
     boxSizing: "border-box"
   },
+  examplesWrap: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "8px",
+    marginTop: "12px"
+  },
+  exampleButton: {
+    border: "1px solid #cbd5e1",
+    borderRadius: "999px",
+    background: "#f8fafc",
+    color: "#334155",
+    padding: "8px 12px",
+    fontSize: "13px",
+    fontWeight: 600,
+    cursor: "pointer"
+  },
   actionRow: {
     display: "flex",
     alignItems: "center",
@@ -270,11 +337,6 @@ const styles = {
     marginBottom: 0,
     color: "#dc2626",
     fontSize: "14px"
-  },
-  copyMessage: {
-    fontSize: "14px",
-    color: "#059669",
-    fontWeight: 600
   }
 };
 
