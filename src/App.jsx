@@ -1,10 +1,50 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const exampleTopics = [
   "중학생 대상 과학 수업용으로 뉴턴 운동법칙 설명",
   "초보 개발자용 React와 Vite 차이 설명",
   "유튜브 쇼츠용 30초 대본 초안 만들기"
 ];
+
+const languageLabelMap = {
+  ko: "한국어",
+  en: "영어"
+};
+
+const formatLabelMap = {
+  explain: "설명형",
+  bullet: "불릿 요약",
+  step: "단계별 가이드",
+  table: "표 형식"
+};
+
+const lengthLabelMap = {
+  short: "짧게",
+  medium: "보통",
+  long: "자세히"
+};
+
+const toneLabelMap = {
+  neutral: "중립적",
+  friendly: "친절한",
+  professional: "전문적",
+  persuasive: "설득형"
+};
+
+const audienceLabelMap = {
+  general: "일반인",
+  student: "중고등학생",
+  college: "대학생",
+  expert: "전문가"
+};
+
+const purposeLabelMap = {
+  learning: "학습용",
+  blog: "블로그용",
+  presentation: "발표용",
+  work: "업무용",
+  sns: "SNS용"
+};
 
 function App() {
   const [topic, setTopic] = useState("");
@@ -31,6 +71,17 @@ function App() {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  const selectedOptionSummary = useMemo(() => {
+    return [
+      languageLabelMap[outputLanguage],
+      formatLabelMap[outputFormat],
+      lengthLabelMap[outputLength],
+      toneLabelMap[tone],
+      audienceLabelMap[audienceLevel],
+      purposeLabelMap[purpose]
+    ].join(" / ");
+  }, [outputLanguage, outputFormat, outputLength, tone, audienceLevel, purpose]);
 
   const handleExampleClick = (exampleText) => {
     setTopic(exampleText);
@@ -229,6 +280,11 @@ function App() {
               </div>
             </div>
 
+            <div style={styles.summaryBox}>
+              <p style={styles.summaryLabel}>현재 선택된 결과 옵션</p>
+              <p style={styles.summaryText}>{selectedOptionSummary}</p>
+            </div>
+
             <div
               style={{
                 ...styles.actionRow,
@@ -386,6 +442,27 @@ const styles = {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
     gap: "14px"
+  },
+  summaryBox: {
+    marginTop: "18px",
+    padding: "14px 16px",
+    borderRadius: "12px",
+    background: "#f8fafc",
+    border: "1px solid #e2e8f0"
+  },
+  summaryLabel: {
+    margin: 0,
+    marginBottom: "6px",
+    fontSize: "13px",
+    fontWeight: 700,
+    color: "#475569"
+  },
+  summaryText: {
+    margin: 0,
+    fontSize: "14px",
+    lineHeight: 1.6,
+    color: "#0f172a",
+    fontWeight: 600
   },
   examplesWrap: {
     display: "flex",
