@@ -281,6 +281,13 @@ export default async function handler(req, res) {
       .replace(/```$/g, "")
       .replace(/^["']|["']$/g, "")
       .trim();
+    if (outputLanguage === "ko") {
+  result = result
+    .replace(/[一-龥]/g, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
 
     if (!result) {
       return res.status(502).json({
