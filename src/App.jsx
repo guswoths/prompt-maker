@@ -314,11 +314,7 @@ function App() {
       return "(비어 있음)";
     }
 
-    if (normalizedValue.length <= 44) {
-      return normalizedValue;
-    }
-
-    return `${normalizedValue.slice(0, 44)}...`;
+    return normalizedValue;
   };
 
   const changedFieldPreviews = useMemo(() => {
@@ -908,13 +904,17 @@ function App() {
                       <li key={item.label} style={styles.resetImpactListItem}>
                         <span style={styles.resetImpactItemLabel}>{item.label}</span>
                         <div style={styles.resetImpactCompareRow}>
-                          <span style={styles.resetImpactPrevious}>
-                            이전: {item.previous}
-                          </span>
+                          <div style={styles.resetImpactTextBlock}>
+                            <span style={styles.resetImpactTextLabel}>이전</span>
+                            <span style={styles.resetImpactTextClamp}>{item.previous}</span>
+                          </div>
+
                           <span style={styles.resetImpactArrow}>→</span>
-                          <span style={styles.resetImpactCurrent}>
-                            현재: {item.current}
-                          </span>
+
+                          <div style={styles.resetImpactTextBlock}>
+                            <span style={styles.resetImpactTextLabel}>현재</span>
+                            <span style={styles.resetImpactTextClamp}>{item.current}</span>
+                          </div>
                         </div>
                       </li>
                     ))}
@@ -1248,6 +1248,8 @@ const styles = {
   modalCard: {
     width: "100%",
     maxWidth: "620px",
+    maxHeight: "80vh",
+    overflowY: "auto",
     background: "#ffffff",
     borderRadius: "18px",
     padding: "22px",
@@ -1326,35 +1328,45 @@ const styles = {
     color: "#0f172a"
   },
   resetImpactCompareRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    flexWrap: "wrap"
+    display: "grid",
+    gridTemplateColumns: "1fr auto 1fr",
+    alignItems: "start",
+    gap: "8px"
   },
-  resetImpactPrevious: {
+  resetImpactTextBlock: {
+    minWidth: 0,
+    display: "flex",
+    flexDirection: "column",
+    gap: "4px"
+  },
+  resetImpactTextLabel: {
+    fontSize: "12px",
+    fontWeight: 700,
+    color: "#64748b"
+  },
+  resetImpactTextClamp: {
     fontSize: "13px",
     lineHeight: 1.5,
-    color: "#64748b",
-    maxWidth: "100%",
+    color: "#334155",
+    overflow: "hidden",
+    display: "-webkit-box",
+    WebkitBoxOrient: "vertical",
+    WebkitLineClamp: 2,
+    lineClamp: 2,
     wordBreak: "break-word"
   },
   resetImpactArrow: {
     fontSize: "13px",
     fontWeight: 700,
-    color: "#94a3b8"
-  },
-  resetImpactCurrent: {
-    fontSize: "13px",
-    lineHeight: 1.5,
-    color: "#334155",
-    maxWidth: "100%",
-    wordBreak: "break-word"
+    color: "#94a3b8",
+    paddingTop: "20px"
   },
   modalButtonRow: {
     display: "flex",
     justifyContent: "flex-end",
     gap: "10px",
-    flexWrap: "wrap"
+    flexWrap: "wrap",
+    marginTop: "18px"
   },
   modalCancelButton: {
     border: "1px solid #cbd5e1",
