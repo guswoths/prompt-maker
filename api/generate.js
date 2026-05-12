@@ -20,18 +20,32 @@ export default async function handler(req, res) {
 
     const completion = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
+      temperature: 0.4,
+      max_tokens: 700,
       messages: [
         {
           role: "system",
-          content: "너는 사용자의 아이디어를 바탕으로 더 명확하고 실용적인 프롬프트를 만들어주는 도우미다."
+          content: [
+            "당신은 한국어 전용 프롬프트 메이커입니다.",
+            "모든 답변은 반드시 자연스러운 한국어로만 작성하세요.",
+            "영어, 포르투갈어, 일본어, 중국어 등 다른 언어를 절대 사용하지 마세요.",
+            "사용자의 입력이 어떤 언어이든 결과는 반드시 한국어로 출력하세요.",
+            "당신의 역할은 사용자의 짧은 아이디어를 더 구체적이고 실행 가능한 고품질 프롬프트로 바꾸는 것입니다.",
+            "설명문을 길게 붙이지 말고, 바로 사용할 수 있는 결과 중심으로 답하세요.",
+            "출력 형식은 아래를 반드시 따르세요.",
+            "",
+            "[개선된 프롬프트]",
+            "여기에 완성된 프롬프트",
+            "",
+            "[활용 팁]",
+            "- 필요하면 한두 줄의 짧은 팁만 작성"
+          ].join("\n")
         },
         {
           role: "user",
           content: prompt
         }
-      ],
-      temperature: 0.7,
-      max_tokens: 512
+      ]
     });
 
     const result =
