@@ -550,13 +550,21 @@ function App() {
         })
       });
 
-      const data = await response.json();
+      const responseText = await response.text();
+      let data = null;
 
-      if (!response.ok) {
-        throw new Error(data.error || "프롬프트 생성에 실패했습니다.");
+      try {
+        data = responseText ? JSON.parse(responseText) : null;
+      } catch (parseError) {
+        console.error("API 응답 JSON 파싱 실패:", responseText);
+        throw new Error("서버 응답이 올바른 JSON 형식이 아닙니다.");
       }
 
-      setGeneratedPrompt(data.result || "");
+      if (!response.ok) {
+        throw new Error(data?.error || "프롬프트 생성에 실패했습니다.");
+      }
+
+      setGeneratedPrompt(data?.result || "");
     } catch (error) {
       console.error(error);
       setErrorMessage("프롬프트 생성 중 오류가 발생했습니다.");
