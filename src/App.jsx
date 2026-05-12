@@ -9,6 +9,7 @@ const examplePrompts = [
 function App() {
   const [userInput, setUserInput] = useState("");
   const [generatedPrompt, setGeneratedPrompt] = useState("");
+  const [promptHistory, setPromptHistory] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [copyButtonText, setCopyButtonText] = useState("복사하기");
@@ -26,6 +27,24 @@ function App() {
   const handleExampleClick = (exampleText) => {
     setUserInput(exampleText);
     setErrorMessage("");
+  };
+
+  const pushHistory = (newPrompt) => {
+    setPromptHistory((previousHistory) => {
+      const deduplicatedHistory = previousHistory.filter(
+        (item) => item.text !== newPrompt
+      );
+
+      const nextHistory = [
+        {
+          id: Date.now(),
+          text: newPrompt
+        },
+        ...deduplicatedHistory
+      ];
+
+      return nextHistory.slice(0, 3);
+    });
   };
 
   const requestGenerate = async (inputText) => {
@@ -57,7 +76,10 @@ function App() {
         throw new Error(data.error || "프롬프트 생성에 실패했습니다.");
       }
 
-      setGeneratedPrompt(data.result || "생성 결과가 비어 있습니다.");
+      const nextPrompt = data.result || "생성 결과가 비어 있습니다.";
+
+      setGeneratedPrompt(nextPrompt);
+      pushHistory(nextPrompt);
     } catch (error) {
       console.error(error);
       setErrorMessage("프롬프트 생성 중 오류가 발생했습니다.");
@@ -92,6 +114,11 @@ function App() {
         setCopyButtonText("복사하기");
       }, 1500);
     }
+  };
+
+  const handleSelectHistory = (historyText) => {
+    setGeneratedPrompt(historyText);
+    setCopyButtonText("복사하기");
   };
 
   return (
@@ -219,6 +246,35 @@ function App() {
               >
                 다시 생성
               </button>
+            </div>
+
+            <div style={styles.historySection}>
+              <div style={styles.historyHeader}>
+                <h3 style={styles.historyTitle}>최근 결과</h3>
+                <p style={styles.historyHint}>최대 3개까지 임시로 보관됩니다.</p>
+              </div>
+
+              {promptHistory.length > 0 ? (
+                <div style={styles.historyList}>
+                  {promptHistory.map((historyItem, index) => (
+                    <button
+                      key={historyItem.id}
+                      onClick={() => handleSelectHistory(historyItem.text)}
+                      style={styles.historyCard}
+                      title="이 결과를 다시 보기"
+                    >
+                      <div style={styles.historyCardTop}>
+                        <span style={styles.historyBadge}>결과 {index + 1}</span>
+                      </div>
+                      <p style={styles.historyPreview}>{historyItem.text}</p>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p style={styles.historyEmpty}>
+                  생성된 결과가 생기면 최근 항목 3개가 여기에 표시됩니다.
+                </p>
+              )}
             </div>
           </section>
         </main>
@@ -377,6 +433,69 @@ const styles = {
     marginBottom: 0,
     color: "#dc2626",
     fontSize: "14px"
+  },
+  historySection: {
+    marginTop: "24px",
+    borderTop: "1px solid #e5e7eb",
+    paddingTop: "20px"
+  },
+  historyHeader: {
+    marginBottom: "12px"
+  },
+  historyTitle: {
+    margin: 0,
+    marginBottom: "4px",
+    fontSize: "18px"
+  },
+  historyHint: {
+    margin: 0,
+    color: "#6b7280",
+    fontSize: "13px"
+  },
+  historyList: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px"
+  },
+  historyCard: {
+    textAlign: "left",
+    width: "100%",
+    border: "1px solid #dbe4f0",
+    borderRadius: "12px",
+    background: "#f8fbff",
+    padding: "12px",
+    cursor: "pointer"
+  },
+  historyCardTop: {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: "8px"
+  },
+  historyBadge: {
+    display: "inline-block",
+    borderRadius: "999px",
+    background: "#dbeafe",
+    color: "#1d4ed8",
+    padding: "4px 8px",
+    fontSize: "12px",
+    fontWeight: 700
+  },
+  historyPreview: {
+    margin: 0,
+    color: "#334155",
+    fontSize: "14px",
+    lineHeight: 1.6,
+    display: "-webkit-box",
+    WebkitLineClamp: 3,
+    WebkitBoxOrient: "vertical",
+    overflow: "hidden"
+  },
+  historyEmpty: {
+    margin: 0,
+    color: "#6b7280",
+    fontSize: "14px",
+    lineHeight: 1.6
   }
 };
 
