@@ -286,6 +286,80 @@ function App() {
     );
   }, [topic, details, mustInclude]);
 
+  const changedInputCount = useMemo(() => {
+    const inputs = [
+      topic !== defaultInputState.topic,
+      details !== defaultInputState.details,
+      mustInclude !== defaultInputState.mustInclude
+    ];
+
+    return inputs.filter(Boolean).length;
+  }, [topic, details, mustInclude]);
+
+  const changedOptionCount = useMemo(() => {
+    const options = [
+      outputLanguage !== defaultOptionState.outputLanguage,
+      outputFormat !== defaultOptionState.outputFormat,
+      outputLength !== defaultOptionState.outputLength,
+      tone !== defaultOptionState.tone,
+      audienceLevel !== defaultOptionState.audienceLevel,
+      purpose !== defaultOptionState.purpose
+    ];
+
+    return options.filter(Boolean).length;
+  }, [
+    outputLanguage,
+    outputFormat,
+    outputLength,
+    tone,
+    audienceLevel,
+    purpose
+  ]);
+
+  const hasGeneratedPrompt = generatedPrompt.trim().length > 0;
+  const hasErrorMessage = errorMessage.trim().length > 0;
+  const hasCopiedState = copyButtonText !== "복사하기";
+
+  const resetImpactItems = useMemo(() => {
+    const items = [];
+
+    if (changedInputCount > 0) {
+      items.push(`입력 내용 ${changedInputCount}개 항목`);
+    }
+
+    if (changedOptionCount > 0) {
+      items.push(`결과 옵션 ${changedOptionCount}개 항목`);
+    }
+
+    if (hasGeneratedPrompt) {
+      items.push("생성된 프롬프트 1개");
+    }
+
+    if (hasErrorMessage) {
+      items.push("오류 메시지 1개");
+    }
+
+    if (hasCopiedState) {
+      items.push("복사 상태 1개");
+    }
+
+    return items;
+  }, [
+    changedInputCount,
+    changedOptionCount,
+    hasGeneratedPrompt,
+    hasErrorMessage,
+    hasCopiedState
+  ]);
+
+  const resetImpactSummary = useMemo(() => {
+    if (resetImpactItems.length === 0) {
+      return "현재 초기화할 항목이 없습니다.";
+    }
+
+    return `현재 초기화 대상: ${resetImpactItems.join(", ")}`;
+  }, [resetImpactItems]);
+
   const isInitialAppState = useMemo(() => {
     return (
       isDefaultInputState &&
@@ -734,8 +808,23 @@ function App() {
                 전체 초기화를 진행할까요?
               </h2>
               <p id="reset-modal-description" style={styles.modalDescription}>
-                입력한 내용, 선택한 결과 옵션, 생성된 프롬프트, 오류 메시지와 복사 상태가 모두 처음 상태로 돌아갑니다.
+                입력한 내용과 현재 상태가 처음 상태로 돌아갑니다.
               </p>
+
+              <div style={styles.resetImpactBox}>
+                <p style={styles.resetImpactLabel}>현재 지워질 항목</p>
+                <p style={styles.resetImpactSummary}>{resetImpactSummary}</p>
+
+                {resetImpactItems.length > 0 && (
+                  <ul style={styles.resetImpactList}>
+                    {resetImpactItems.map((item) => (
+                      <li key={item} style={styles.resetImpactListItem}>
+                        {item}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             </div>
 
             <div style={styles.modalButtonRow}>
@@ -1095,6 +1184,37 @@ const styles = {
     color: "#4b5563",
     fontSize: "14px",
     lineHeight: 1.6
+  },
+  resetImpactBox: {
+    marginTop: "14px",
+    borderRadius: "14px",
+    background: "#f8fafc",
+    border: "1px solid #e2e8f0",
+    padding: "14px"
+  },
+  resetImpactLabel: {
+    margin: 0,
+    marginBottom: "6px",
+    fontSize: "13px",
+    fontWeight: 700,
+    color: "#475569"
+  },
+  resetImpactSummary: {
+    margin: 0,
+    color: "#0f172a",
+    fontSize: "14px",
+    lineHeight: 1.6,
+    fontWeight: 600
+  },
+  resetImpactList: {
+    margin: "10px 0 0 0",
+    paddingLeft: "18px",
+    color: "#334155"
+  },
+  resetImpactListItem: {
+    marginBottom: "6px",
+    fontSize: "14px",
+    lineHeight: 1.5
   },
   modalButtonRow: {
     display: "flex",
