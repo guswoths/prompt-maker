@@ -119,6 +119,10 @@ function App() {
               style={styles.textarea}
             />
 
+            <p style={styles.sessionNote}>
+              자동 저장되지 않습니다. 현재 입력 내용은 새로고침 전까지만 유지됩니다.
+            </p>
+
             <div style={styles.examplesWrap}>
               {examplePrompts.map((exampleText, index) => (
                 <button
@@ -171,6 +175,10 @@ function App() {
                 </p>
               )}
             </div>
+
+            <p style={styles.sessionNote}>
+              생성 결과도 자동 저장되지 않으며, 새로고침하면 사라집니다.
+            </p>
 
             <div
               style={{
@@ -292,6 +300,13 @@ const styles = {
     resize: "vertical",
     outline: "none",
     boxSizing: "border-box"
+  },
+  sessionNote: {
+    marginTop: "10px",
+    marginBottom: 0,
+    color: "#64748b",
+    fontSize: "13px",
+    lineHeight: 1.5
   },
   examplesWrap: {
     display: "flex",
