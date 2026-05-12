@@ -158,17 +158,20 @@ function App() {
   const [tone, setTone] = useState(defaultOptionState.tone);
   const [audienceLevel, setAudienceLevel] = useState(defaultOptionState.audienceLevel);
   const [purpose, setPurpose] = useState(defaultOptionState.purpose);
-
   const [generatedPrompt, setGeneratedPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const [copyButtonText, setCopyButtonText] = useState("복사하기");
+  const [copyErrorMessage, setCopyErrorMessage] = useState("");
+  const [toastMessage, setToastMessage] = useState("");
+  const [isToastVisible, setIsToastVisible] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 640);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
 
   const globalResetButtonRef = useRef(null);
   const modalCardRef = useRef(null);
   const cancelResetButtonRef = useRef(null);
+  const toastTimerRef = useRef(null);
 
   useEffect(() => {
     const handleResize = () => {
@@ -177,6 +180,14 @@ function App() {
 
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) {
+        window.clearTimeout(toastTimerRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -303,7 +314,8 @@ function App() {
 
   const hasGeneratedPrompt = generatedPrompt.trim().length > 0;
   const hasErrorMessage = errorMessage.trim().length > 0;
-  const hasCopiedState = copyButtonText !== "복사하기";
+  const hasToastState = toastMessage.trim().length > 0;
+  const hasCopyErrorMessage = copyErrorMessage.trim().length > 0;
 
   const buildPreviewText = (value) => {
     const normalizedValue = String(value ?? "")
@@ -408,11 +420,19 @@ function App() {
       });
     }
 
-    if (hasCopiedState) {
+    if (hasToastState) {
       items.push({
-        label: "복사 상태",
-        previous: "복사하기",
-        current: copyButtonText
+        label: "복사 성공 알림",
+        previous: "(없음)",
+        current: buildPreviewText(toastMessage)
+      });
+    }
+
+    if (hasCopyErrorMessage) {
+      items.push({
+        label: "복사 오류",
+        previous: "(없음)",
+        current: buildPreviewText(copyErrorMessage)
       });
     }
 
@@ -429,10 +449,12 @@ function App() {
     purpose,
     generatedPrompt,
     errorMessage,
-    copyButtonText,
+    toastMessage,
+    copyErrorMessage,
     hasGeneratedPrompt,
     hasErrorMessage,
-    hasCopiedState
+    hasToastState,
+    hasCopyErrorMessage
   ]);
 
   const resetImpactSummary = useMemo(() => {
@@ -449,15 +471,42 @@ function App() {
       isDefaultOptionState &&
       generatedPrompt === "" &&
       errorMessage === "" &&
-      copyButtonText === "복사하기"
+      toastMessage === "" &&
+      copyErrorMessage === ""
     );
   }, [
     isDefaultInputState,
     isDefaultOptionState,
     generatedPrompt,
     errorMessage,
-    copyButtonText
+    toastMessage,
+    copyErrorMessage
   ]);
+
+  const clearToast = () => {
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+    setToastMessage("");
+    setIsToastVisible(false);
+  };
+
+  const showToast = (message) => {
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+
+    setToastMessage(message);
+    setIsToastVisible(true);
+
+    toastTimerRef.current = window.setTimeout(() => {
+      setIsToastVisible(false);
+
+      window.setTimeout(() => {
+        setToastMessage("");
+      }, 180);
+    }, 1600);
+  };
 
   const handleExampleClick = (exampleText) => {
     setTopic(exampleText);
@@ -501,7 +550,19 @@ function App() {
     setIsResetModalOpen(false);
   };
 
+  const openGuideModal = () => {
+    setIsGuideModalOpen(true);
+  };
+
+  const closeGuideModal = () => {
+    setIsGuideModalOpen(false);
+  };
+
   const resetAll = () => {
+    if (toastTimerRef.current) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+
     setTopic(defaultInputState.topic);
     setDetails(defaultInputState.details);
     setMustInclude(defaultInputState.mustInclude);
@@ -515,7 +576,9 @@ function App() {
 
     setGeneratedPrompt("");
     setErrorMessage("");
-    setCopyButtonText("복사하기");
+    setCopyErrorMessage("");
+    setToastMessage("");
+    setIsToastVisible(false);
     setIsResetModalOpen(false);
   };
 
@@ -529,7 +592,8 @@ function App() {
     setIsGenerating(true);
     setErrorMessage("");
     setGeneratedPrompt("");
-    setCopyButtonText("복사하기");
+    setCopyErrorMessage("");
+    clearToast();
 
     try {
       const response = await fetch("/api/generate", {
@@ -578,18 +642,15 @@ function App() {
       return;
     }
 
+    setCopyErrorMessage("");
+
     try {
       await navigator.clipboard.writeText(generatedPrompt);
-      setCopyButtonText("복사 완료");
-      setTimeout(() => {
-        setCopyButtonText("복사하기");
-      }, 1500);
+      showToast("복사 완료");
     } catch (error) {
       console.error(error);
-      setCopyButtonText("복사 실패");
-      setTimeout(() => {
-        setCopyButtonText("복사하기");
-      }, 1500);
+      clearToast();
+      setCopyErrorMessage("복사에 실패했습니다. 브라우저 권한 상태를 확인한 뒤 다시 시도해 주세요.");
     }
   };
 
@@ -599,33 +660,51 @@ function App() {
     <>
       <div
         style={styles.page}
-        aria-hidden={isResetModalOpen ? "true" : "false"}
+        aria-hidden={isResetModalOpen || isGuideModalOpen ? "true" : "false"}
       >
         <div style={styles.container}>
           <header style={styles.header}>
             <div style={styles.headerTop}>
-              <div>
-                <p style={styles.badge}>Prompt Maker</p>
-                <h1 style={styles.title}>입력 내용과 결과 옵션을 분리해서 프롬프트 생성</h1>
+              <div style={styles.brandWrap}>
+                <div style={styles.logoRow}>
+                  <div style={styles.logoMark}>P</div>
+                  <div>
+                    <h1 style={styles.brandTitle}>Prompt Maker</h1>
+                    <p style={styles.brandSubtitle}>
+                      프롬프트를 더 빠르고 정확하게 만드는 생성 도구
+                    </p>
+                  </div>
+                </div>
+
                 <p style={styles.description}>
-                  왼쪽에는 내가 AI에게 전달할 내용을 적고, 오른쪽에는 결과가 어떤 방식으로 나오게 할지 선택하세요.
+                  왼쪽에는 AI에게 전달할 원재료를 적고, 오른쪽에서는 다른 AI가 어떤 결과를 내야 하는지 옵션으로 설계하세요.
                 </p>
               </div>
 
-              <button
-                ref={globalResetButtonRef}
-                onClick={openResetModal}
-                disabled={isInitialAppState || isGenerating}
-                style={{
-                  ...styles.globalResetButton,
-                  opacity: isInitialAppState || isGenerating ? 0.45 : 1,
-                  cursor:
-                    isInitialAppState || isGenerating ? "not-allowed" : "pointer"
-                }}
-                title="입력, 옵션, 결과를 모두 처음 상태로 되돌리기"
-              >
-                전체 초기화
-              </button>
+              <div style={styles.headerActionGroup}>
+                <button
+                  onClick={openGuideModal}
+                  style={styles.guideButton}
+                  title="사용방법과 제작 이유 보기"
+                >
+                  사용방법 / 왜 만들었나요?
+                </button>
+
+                <button
+                  ref={globalResetButtonRef}
+                  onClick={openResetModal}
+                  disabled={isInitialAppState || isGenerating}
+                  style={{
+                    ...styles.globalResetButton,
+                    opacity: isInitialAppState || isGenerating ? 0.45 : 1,
+                    cursor:
+                      isInitialAppState || isGenerating ? "not-allowed" : "pointer"
+                  }}
+                  title="입력, 옵션, 결과를 모두 처음 상태로 되돌리기"
+                >
+                  전체 초기화
+                </button>
+              </div>
             </div>
           </header>
 
@@ -636,7 +715,7 @@ function App() {
                   <div>
                     <h2 style={styles.sectionTitle}>내가 제공할 내용</h2>
                     <p style={styles.sectionHint}>
-                      AI가 이해해야 하는 주제, 맥락, 포함 요소를 적습니다.
+                      다른 AI가 참고해야 할 주제, 맥락, 반드시 포함할 요소를 입력합니다.
                     </p>
                   </div>
 
@@ -698,7 +777,7 @@ function App() {
               <div style={styles.sectionHeader}>
                 <h2 style={styles.sectionTitle}>결과 옵션</h2>
                 <p style={styles.sectionHint}>
-                  생성된 프롬프트를 다른 AI에 붙여넣었을 때 어떤 결과가 나오게 할지 선택합니다.
+                  생성된 문장을 다른 AI에 붙여넣었을 때, 어떤 결과 형식으로 나오게 할지 설정합니다.
                 </p>
               </div>
 
@@ -863,19 +942,6 @@ function App() {
                 >
                   {isGenerating ? "생성 중..." : "프롬프트 생성"}
                 </button>
-
-                <button
-                  onClick={handleCopy}
-                  disabled={!generatedPrompt}
-                  style={{
-                    ...styles.secondaryButton,
-                    width: isMobile ? "100%" : "auto",
-                    opacity: generatedPrompt ? 1 : 0.5,
-                    cursor: generatedPrompt ? "pointer" : "not-allowed"
-                  }}
-                >
-                  {copyButtonText}
-                </button>
               </div>
 
               {errorMessage && <p style={styles.errorText}>{errorMessage}</p>}
@@ -883,11 +949,62 @@ function App() {
           </main>
 
           <section style={{ ...styles.card, marginTop: "20px" }}>
-            <div style={styles.sectionHeader}>
-              <h2 style={styles.sectionTitle}>생성된 프롬프트</h2>
-              <p style={styles.sectionHint}>
-                아래 결과를 다른 AI에 그대로 붙여넣으면, 선택한 옵션 방향으로 답변이 나오도록 설계됩니다.
-              </p>
+            <div
+              style={{
+                ...styles.sectionHeader,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                flexWrap: "wrap",
+                gap: "12px"
+              }}
+            >
+              <div>
+                <h2 style={styles.sectionTitle}>생성된 프롬프트</h2>
+                <p style={styles.sectionHint}>
+                  아래 문장은 결과 설명문이 아니라, 다른 AI에 붙여넣기 위한 최종 입력 프롬프트입니다.
+                </p>
+              </div>
+
+              <div style={styles.resultHeaderActionColumn}>
+                <div style={styles.resultHeaderActionWrap}>
+                  {toastMessage && (
+                    <div
+                      aria-live="polite"
+                      role="status"
+                      style={{
+                        ...styles.toast,
+                        ...(isToastVisible ? styles.toastVisible : styles.toastHidden)
+                      }}
+                    >
+                      {toastMessage}
+                    </div>
+                  )}
+
+                  <button
+                    onClick={handleCopy}
+                    disabled={!generatedPrompt}
+                    aria-describedby={copyErrorMessage ? "copy-inline-error" : undefined}
+                    style={{
+                      ...styles.secondaryButton,
+                      opacity: generatedPrompt ? 1 : 0.5,
+                      cursor: generatedPrompt ? "pointer" : "not-allowed"
+                    }}
+                  >
+                    복사하기
+                  </button>
+                </div>
+
+                {copyErrorMessage && (
+                  <p
+                    id="copy-inline-error"
+                    role="alert"
+                    style={styles.inlineCopyErrorText}
+                  >
+                    {copyErrorMessage}
+                  </p>
+                )}
+              </div>
             </div>
 
             <div style={styles.resultBox}>
@@ -902,6 +1019,70 @@ function App() {
           </section>
         </div>
       </div>
+
+      {isGuideModalOpen && (
+        <div
+          style={styles.modalOverlay}
+          onClick={closeGuideModal}
+          aria-hidden="true"
+        >
+          <div
+            style={styles.modalCard}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="guide-modal-title"
+            aria-describedby="guide-modal-description"
+            tabIndex={-1}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div style={styles.modalHeader}>
+              <p style={styles.guideBadge}>안내</p>
+              <h2 id="guide-modal-title" style={styles.modalTitle}>
+                사용방법 및 제작 이유
+              </h2>
+              <p id="guide-modal-description" style={styles.modalDescription}>
+                이 도구를 처음 쓰는 분도 바로 이해할 수 있도록 사용 흐름과 만든 이유를 정리했습니다.
+              </p>
+
+              <div style={styles.guideContentBox}>
+                <div style={styles.guideSection}>
+                  <h3 style={styles.guideSectionTitle}>사용방법</h3>
+                  <ol style={styles.guideList}>
+                    <li style={styles.guideListItem}>
+                      <strong>주제, 추가 설명, 포함 요소</strong>를 입력해 다른 AI가 참고해야 할 원재료를 정리합니다.
+                    </li>
+                    <li style={styles.guideListItem}>
+                      <strong>결과 옵션</strong>을 선택해 다른 AI가 어떤 형식과 톤으로 답해야 하는지 설계합니다.
+                    </li>
+                    <li style={styles.guideListItem}>
+                      <strong>프롬프트 생성</strong>을 누른 뒤, 생성된 문장을 복사해서 원하는 AI에 그대로 붙여넣습니다.
+                    </li>
+                  </ol>
+                </div>
+
+                <div style={styles.guideSection}>
+                  <h3 style={styles.guideSectionTitle}>왜 만들었나요?</h3>
+                  <p style={styles.guideParagraph}>
+                    좋은 AI 결과는 좋은 입력 프롬프트에서 시작되지만, 그 문장을 매번 직접 짜는 일은 번거롭습니다.
+                  </p>
+                  <p style={styles.guideParagraph}>
+                    특히 결과 형식, 길이, 대상 수준, 목적까지 일일이 문장에 반영하려면 시간과 토큰이 더 많이 듭니다.
+                  </p>
+                  <p style={styles.guideParagraph}>
+                    이 도구는 사용자가 원재료와 옵션만 고르면, 다른 AI에서 바로 활용 가능한 입력 프롬프트를 빠르게 만들기 위해 제작했습니다.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div style={styles.modalButtonRow}>
+              <button onClick={closeGuideModal} style={styles.modalCancelButton}>
+                닫기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {isResetModalOpen && (
         <div
@@ -999,29 +1180,69 @@ const getStyles = (isMobile) => ({
     gap: "16px",
     flexWrap: "wrap"
   },
-  badge: {
-    display: "inline-block",
-    margin: 0,
-    marginBottom: "12px",
-    padding: "6px 10px",
-    borderRadius: "999px",
-    background: "#e0e7ff",
-    color: "#3730a3",
-    fontSize: "12px",
-    fontWeight: 700
+  headerActionGroup: {
+    display: "flex",
+    gap: "10px",
+    flexWrap: "wrap",
+    alignItems: "center"
   },
-  title: {
+  brandWrap: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "14px"
+  },
+  logoRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: "16px",
+    flexWrap: "wrap"
+  },
+  logoMark: {
+    width: isMobile ? "56px" : "72px",
+    height: isMobile ? "56px" : "72px",
+    borderRadius: "20px",
+    background: "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+    color: "#ffffff",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontSize: isMobile ? "28px" : "36px",
+    fontWeight: 900,
+    letterSpacing: "-0.04em",
+    boxShadow: "0 14px 30px rgba(37, 99, 235, 0.28)"
+  },
+  brandTitle: {
     margin: 0,
-    fontSize: "36px",
-    lineHeight: 1.2,
-    marginBottom: "12px"
+    fontSize: isMobile ? "40px" : "56px",
+    lineHeight: 1,
+    letterSpacing: "-0.05em",
+    fontWeight: 900,
+    color: "#0f172a"
+  },
+  brandSubtitle: {
+    margin: 0,
+    marginTop: "8px",
+    fontSize: isMobile ? "14px" : "17px",
+    fontWeight: 700,
+    color: "#2563eb",
+    lineHeight: 1.4
   },
   description: {
     margin: 0,
     maxWidth: "760px",
     color: "#4b5563",
-    fontSize: "16px",
-    lineHeight: 1.6
+    fontSize: isMobile ? "15px" : "16px",
+    lineHeight: 1.7
+  },
+  guideButton: {
+    border: "1px solid #bfdbfe",
+    borderRadius: "12px",
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    padding: "10px 14px",
+    fontSize: "13px",
+    fontWeight: 700,
+    whiteSpace: "nowrap"
   },
   globalResetButton: {
     border: "1px solid #fecaca",
@@ -1240,6 +1461,48 @@ const getStyles = (isMobile) => ({
     fontSize: "15px",
     fontWeight: 700
   },
+  resultHeaderActionColumn: {
+    display: "flex",
+    flexDirection: "column",
+    alignItems: isMobile ? "stretch" : "flex-end",
+    gap: "8px",
+    minWidth: isMobile ? "100%" : "auto"
+  },
+  resultHeaderActionWrap: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    flexWrap: "wrap",
+    justifyContent: isMobile ? "flex-start" : "flex-end"
+  },
+  toast: {
+    padding: "10px 12px",
+    borderRadius: "999px",
+    background: "#111827",
+    color: "#ffffff",
+    fontSize: "13px",
+    fontWeight: 700,
+    lineHeight: 1,
+    boxShadow: "0 8px 24px rgba(15, 23, 42, 0.18)",
+    transition: "opacity 0.18s ease, transform 0.18s ease"
+  },
+  toastVisible: {
+    opacity: 1,
+    transform: "translateY(0)"
+  },
+  toastHidden: {
+    opacity: 0,
+    transform: "translateY(-4px)",
+    pointerEvents: "none"
+  },
+  inlineCopyErrorText: {
+    margin: 0,
+    fontSize: "13px",
+    lineHeight: 1.5,
+    color: "#dc2626",
+    textAlign: isMobile ? "left" : "right",
+    maxWidth: "320px"
+  },
   resultBox: {
     minHeight: "240px",
     borderRadius: "12px",
@@ -1302,6 +1565,17 @@ const getStyles = (isMobile) => ({
     fontSize: "12px",
     fontWeight: 700
   },
+  guideBadge: {
+    display: "inline-block",
+    margin: 0,
+    marginBottom: "10px",
+    padding: "6px 10px",
+    borderRadius: "999px",
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    fontSize: "12px",
+    fontWeight: 700
+  },
   modalTitle: {
     margin: 0,
     marginBottom: "10px",
@@ -1314,6 +1588,42 @@ const getStyles = (isMobile) => ({
     color: "#4b5563",
     fontSize: "14px",
     lineHeight: 1.6
+  },
+  guideContentBox: {
+    marginTop: "14px",
+    borderRadius: "14px",
+    background: "#f8fafc",
+    border: "1px solid #e2e8f0",
+    padding: "16px",
+    display: "flex",
+    flexDirection: "column",
+    gap: "18px"
+  },
+  guideSection: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px"
+  },
+  guideSectionTitle: {
+    margin: 0,
+    fontSize: "18px",
+    color: "#0f172a"
+  },
+  guideList: {
+    margin: 0,
+    paddingLeft: "20px",
+    color: "#334155",
+    lineHeight: 1.7,
+    fontSize: "14px"
+  },
+  guideListItem: {
+    marginBottom: "8px"
+  },
+  guideParagraph: {
+    margin: 0,
+    color: "#334155",
+    fontSize: "14px",
+    lineHeight: 1.7
   },
   resetImpactBox: {
     marginTop: "14px",
