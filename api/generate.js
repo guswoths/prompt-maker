@@ -47,7 +47,8 @@ export default async function handler(req, res) {
           ].join(" ")
         : [
             "최종 결과 프롬프트는 반드시 자연스러운 현대 한국어로만 작성하세요.",
-            "한자, 일본식 한자어 표기, 중국어 문자, 깨진 문자, 특수 인코딩 흔적을 절대 포함하지 마세요.",
+            "한자, 일본어 문자, 일본식 표기, 중국어 문자, 깨진 문자, 특수 인코딩 흔적을 절대 포함하지 마세요.",
+            "히라가나, 가타카나, 일본식 구두점과 기호를 절대 사용하지 마세요.",
             "영문 고유명사나 불가피한 기술 용어를 제외하고는 한글 중심으로 작성하세요.",
             "출력물은 설명문이 아니라 다른 AI에 그대로 붙여넣을 최종 프롬프트여야 합니다.",
             "머리말, 해설, 주석, 따옴표, 코드블록 없이 최종 프롬프트 본문만 반환하세요."
@@ -172,9 +173,10 @@ export default async function handler(req, res) {
     if (outputLanguage === "ko") {
       result = result
         .replace(/[一-龥]/g, "")
-        .replace(/[ぁ-ゔゞ゛゜ー]/gu, "")
-        .replace(/[ァ-ヺヾー]/gu, "")
-        .replace(/[・「」『』（）［］｛｝]/gu, "")
+        .replace(/[\u3040-\u309F]/gu, "")
+        .replace(/[\u30A0-\u30FF]/gu, "")
+        .replace(/[\u3000-\u303F]/gu, "")
+        .replace(/[\uFF65-\uFF9F]/gu, "")
         .replace(/\s{2,}/g, " ")
         .replace(/\n{3,}/g, "\n\n")
         .trim();
