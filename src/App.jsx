@@ -46,6 +46,69 @@ const purposeLabelMap = {
   sns: "SNS용"
 };
 
+const purposePresets = [
+  {
+    key: "learning",
+    label: "학습용 프리셋",
+    values: {
+      outputLanguage: "ko",
+      outputFormat: "step",
+      outputLength: "long",
+      tone: "friendly",
+      audienceLevel: "student",
+      purpose: "learning"
+    }
+  },
+  {
+    key: "blog",
+    label: "블로그용 프리셋",
+    values: {
+      outputLanguage: "ko",
+      outputFormat: "explain",
+      outputLength: "long",
+      tone: "professional",
+      audienceLevel: "general",
+      purpose: "blog"
+    }
+  },
+  {
+    key: "presentation",
+    label: "발표용 프리셋",
+    values: {
+      outputLanguage: "ko",
+      outputFormat: "bullet",
+      outputLength: "medium",
+      tone: "professional",
+      audienceLevel: "general",
+      purpose: "presentation"
+    }
+  },
+  {
+    key: "work",
+    label: "업무용 프리셋",
+    values: {
+      outputLanguage: "ko",
+      outputFormat: "table",
+      outputLength: "medium",
+      tone: "neutral",
+      audienceLevel: "general",
+      purpose: "work"
+    }
+  },
+  {
+    key: "sns",
+    label: "SNS용 프리셋",
+    values: {
+      outputLanguage: "ko",
+      outputFormat: "bullet",
+      outputLength: "short",
+      tone: "persuasive",
+      audienceLevel: "general",
+      purpose: "sns"
+    }
+  }
+];
+
 function App() {
   const [topic, setTopic] = useState("");
   const [details, setDetails] = useState("");
@@ -86,6 +149,15 @@ function App() {
   const handleExampleClick = (exampleText) => {
     setTopic(exampleText);
     setErrorMessage("");
+  };
+
+  const applyPreset = (presetValues) => {
+    setOutputLanguage(presetValues.outputLanguage);
+    setOutputFormat(presetValues.outputFormat);
+    setOutputLength(presetValues.outputLength);
+    setTone(presetValues.tone);
+    setAudienceLevel(presetValues.audienceLevel);
+    setPurpose(presetValues.purpose);
   };
 
   const handleGenerate = async () => {
@@ -218,6 +290,22 @@ function App() {
               <p style={styles.sectionHint}>
                 생성된 프롬프트를 다른 AI에 붙여넣었을 때 어떤 결과가 나오게 할지 선택합니다.
               </p>
+            </div>
+
+            <div style={styles.presetSection}>
+              <p style={styles.presetLabel}>빠른 프리셋</p>
+              <div style={styles.presetWrap}>
+                {purposePresets.map((preset) => (
+                  <button
+                    key={preset.key}
+                    onClick={() => applyPreset(preset.values)}
+                    style={styles.presetButton}
+                    title={`${preset.label} 적용`}
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div style={styles.optionGrid}>
@@ -437,6 +525,31 @@ const styles = {
     fontSize: "14px",
     background: "#ffffff",
     boxSizing: "border-box"
+  },
+  presetSection: {
+    marginBottom: "16px"
+  },
+  presetLabel: {
+    margin: 0,
+    marginBottom: "10px",
+    fontSize: "14px",
+    fontWeight: 700,
+    color: "#334155"
+  },
+  presetWrap: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: "10px"
+  },
+  presetButton: {
+    border: "1px solid #bfdbfe",
+    borderRadius: "999px",
+    background: "#eff6ff",
+    color: "#1d4ed8",
+    padding: "10px 14px",
+    fontSize: "13px",
+    fontWeight: 700,
+    cursor: "pointer"
   },
   optionGrid: {
     display: "grid",
