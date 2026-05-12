@@ -43,11 +43,11 @@ export default async function handler(req, res) {
         ? [
             "Write the final prompt in English only.",
             "Do not include Korean.",
-            "Return only the final prompt body that can be pasted directly into another AI."
+            "Return only one final prompt body that can be pasted directly into another AI."
           ].join(" ")
         : [
             "최종 프롬프트는 반드시 자연스러운 현대 한국어로만 작성하세요.",
-            "불필요한 영어 혼용, 깨진 문자, 한자 남용, 메타 설명을 포함하지 마세요.",
+            "불필요한 영어 혼용, 깨진 문자, 한자, 메타 설명을 포함하지 마세요.",
             "영문 고유명사나 기술 용어가 꼭 필요할 때만 제한적으로 사용하세요.",
             "출력은 설명문이 아니라 다른 AI에 그대로 붙여넣을 최종 프롬프트 본문이어야 합니다."
           ].join(" ");
@@ -106,6 +106,8 @@ export default async function handler(req, res) {
 
     const bannedRules = [
       "절대로 '다음은 프롬프트입니다', '아래와 같이', '설명해드리겠습니다' 같은 메타 문구를 쓰지 마세요.",
+      "절대로 사용자의 주제에 대해 직접 설명하지 마세요.",
+      "절대로 요약문, 해설문, 안내문, 배경설명 형태로 쓰지 마세요.",
       "따옴표로 전체를 감싸지 마세요.",
       "코드블록을 사용하지 마세요.",
       "번호를 붙여 프롬프트 외 설명을 추가하지 마세요.",
@@ -136,9 +138,15 @@ export default async function handler(req, res) {
 
     const systemPrompt = [
       "당신은 사용자의 요구를 분석해 다른 생성형 AI의 성능을 최대한 끌어올리는 고급 프롬프트 엔지니어입니다.",
-      "당신의 임무는 답변 자체를 작성하는 것이 아니라, 다른 AI가 더 정교하고 목적 적합한 결과를 생성하도록 만드는 최종 입력 프롬프트를 설계하는 것입니다.",
-      "항상 사용자의 입력 의도와 옵션을 우선 보존하되, 모호한 부분은 더 명확한 지시로 재구성하세요.",
-      "좋은 최종 프롬프트는 단순 요청문이 아니라 목표, 독자, 형식, 품질 기준, 포함 요소가 자연스럽게 결합된 완성형 지시문이어야 합니다.",
+      "당신의 임무는 답변 자체를 작성하는 것이 아니라, 다른 AI가 작업을 수행하도록 지시하는 최종 입력 프롬프트를 설계하는 것입니다.",
+      "당신이 출력해야 하는 것은 오직 다른 AI에게 내리는 작업 지시문입니다.",
+      "절대로 사용자의 주제에 대해 직접 설명하지 마세요.",
+      "절대로 요약문, 해설문, 안내문, 서론, 배경설명 형태로 쓰지 마세요.",
+      "최종 결과는 반드시 명령형 또는 요청형 표현으로 작성하세요.",
+      "예: '설명해줘', '정리해줘', '표로 작성해줘', '단계별로 안내해줘' 같은 형식만 허용됩니다.",
+      "평서형 설명문이나 주제 자체를 풀이하는 문장은 허용되지 않습니다.",
+      "좋은 최종 프롬프트는 목표, 대상 독자, 출력 형식, 길이, 말투, 포함 요소, 품질 기준이 자연스럽게 포함된 완성형 지시문이어야 합니다.",
+      "사용자의 입력 의도와 옵션은 유지하되, 더 좋은 결과가 나오도록 문장을 정교하게 재구성하세요.",
       languageInstruction,
       formatInstructionMap[outputFormat] || formatInstructionMap.step,
       lengthInstructionMap[outputLength] || lengthInstructionMap.medium,
@@ -149,15 +157,22 @@ export default async function handler(req, res) {
       ...qualityRules,
       ...bannedRules,
       ...inferredEnhancementRules,
-      "출력은 오직 최종 프롬프트 본문만 허용됩니다."
+      "출력은 오직 최종 프롬프트 본문만 허용됩니다.",
+      "출력 전에 스스로 검토하세요. 1) 설명문이 아닌가? 2) 다른 AI에게 지시하는 문장인가? 3) 바로 복사해서 붙여넣을 수 있는가?"
     ].join(" ");
 
     const userPrompt = [
       "아래 정보를 바탕으로, 다른 AI에 그대로 붙여넣어 사용할 수 있는 단일 최종 프롬프트를 작성하세요.",
-      "사용자의 원래 의도는 유지하되, 더 고품질 결과가 나오도록 문장을 정교하게 다듬으세요.",
-      "필요하면 결과의 구성 방식, 포함해야 할 관점, 예시 수준, 설명 깊이, 형식적 제약을 자연스럽게 보강하세요.",
+      "중요: 주제에 대해 직접 설명하지 말고, 반드시 다른 AI에게 작업을 지시하는 문장으로만 작성하세요.",
+      "결과는 해설문이 아니라 명령문이어야 합니다.",
+      "반드시 다른 AI가 실제로 수행해야 할 작업을 요청하는 형태로 작성하세요.",
+      "출력은 한 개의 완성된 최종 프롬프트 본문만 반환하세요.",
+      "잘못된 예: '뉴턴의 운동법칙은 물체의 운동을 설명하는 법칙입니다.'",
+      "올바른 예: '중학생이 이해할 수 있도록 뉴턴의 운동법칙을 쉬운 비유와 일상 예시 2개를 포함해 단계별로 설명해줘.'",
+      "잘못된 예: 'React와 Vite의 차이에 대한 설명입니다.'",
+      "올바른 예: '초보 개발자가 이해할 수 있도록 React와 Vite의 차이를 표와 예시를 포함해 설명해줘.'",
+      "사용자 의도는 유지하되, 더 고품질 결과가 나오도록 구성 방식, 포함 관점, 설명 깊이, 형식 조건을 자연스럽게 보강하세요.",
       "단, 사용자 요청 범위를 넘는 과도한 추측은 하지 마세요.",
-      "최종 출력은 완성된 프롬프트 본문만 반환하세요.",
       "",
       userRequestBlock
     ].join("\n");
@@ -170,7 +185,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: "llama-3.3-70b-versatile",
-        temperature: 0.45,
+        temperature: 0.35,
         top_p: 0.9,
         messages: [
           { role: "system", content: systemPrompt },
@@ -214,6 +229,23 @@ export default async function handler(req, res) {
         .replace(/\s+\n/g, "\n")
         .replace(/\n\s+/g, "\n")
         .trim();
+    }
+
+    const looksLikeExplanationInKorean =
+      outputLanguage === "ko" &&
+      /^(이|해당|위|아래)?\s*주제는|^(이것은|이는|다음은)|설명입니다\.?$|의미합니다\.?$|에 대한 설명/.test(result);
+
+    const looksLikeExplanationInEnglish =
+      outputLanguage === "en" &&
+      /^(This|It|The topic|Below is|Here is)\b/i.test(result);
+
+    if (looksLikeExplanationInKorean || looksLikeExplanationInEnglish) {
+      const rebuiltPrompt =
+        outputLanguage === "en"
+          ? `Please write about "${normalizedTopic}" according to the following conditions. Respond as an instruction prompt for another AI, not as an explanation.\n\n${result}`
+          : `${audienceLevel === "student" ? "초보자도 이해할 수 있도록 " : ""}${normalizedTopic}에 대해 아래 조건을 반영해 작성해줘.\n${normalizedDetails ? `추가 맥락: ${normalizedDetails}\n` : ""}${normalizedMustInclude ? `반드시 포함할 요소: ${normalizedMustInclude}\n` : ""}결과는 설명문이 아니라, 구조화된 ${outputFormat === "table" ? "표 형식" : outputFormat === "bullet" ? "불릿 형식" : outputFormat === "step" ? "단계별 형식" : "설명형"}의 답변으로 제공해줘.`;
+
+      result = rebuiltPrompt.trim();
     }
 
     if (!result) {
