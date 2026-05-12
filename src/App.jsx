@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 
 const examplePrompts = [
-  "중학생도 이해할 수 있게 뉴턴 운동법칙을 쉬운 비유로 설명하는 수업용 프롬프트 작성",
-  "초보 개발자가 React와 Vite 차이를 빠르게 이해할 수 있도록 설명하는 프롬프트 작성",
-  "유튜브 쇼츠용으로 30초 안에 핵심만 전달하는 대본 생성 프롬프트 작성"
+  "중학생 대상 과학 수업용으로 뉴턴 운동법칙을 쉬운 비유와 예시 중심으로 설명하는 프롬프트",
+  "React와 Vite의 차이를 초보 개발자도 이해할 수 있게 비교 설명하는 프롬프트",
+  "유튜브 쇼츠용으로 30초 안에 핵심만 전달하는 대본 생성 프롬프트"
 ];
 
 function App() {
@@ -28,8 +28,8 @@ function App() {
     setErrorMessage("");
   };
 
-  const handleGenerate = async () => {
-    const trimmedInput = userInput.trim();
+  const requestGenerate = async (inputText) => {
+    const trimmedInput = inputText.trim();
 
     if (!trimmedInput) {
       setErrorMessage("아이디어 또는 요청사항을 먼저 입력해 주세요.");
@@ -64,6 +64,14 @@ function App() {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleGenerate = async () => {
+    await requestGenerate(userInput);
+  };
+
+  const handleRegenerate = async () => {
+    await requestGenerate(userInput);
   };
 
   const handleCopy = async () => {
@@ -117,8 +125,9 @@ function App() {
                   key={index}
                   onClick={() => handleExampleClick(exampleText)}
                   style={styles.exampleButton}
+                  title={exampleText}
                 >
-                  예시 {index + 1}
+                  {exampleText}
                 </button>
               ))}
             </div>
@@ -150,7 +159,7 @@ function App() {
           <section style={styles.card}>
             <div style={styles.sectionHeader}>
               <h2 style={styles.sectionTitle}>3. 결과</h2>
-              <p style={styles.sectionHint}>생성된 프롬프트를 확인하고 바로 복사하세요.</p>
+              <p style={styles.sectionHint}>생성된 프롬프트를 확인하고 바로 복사하거나 다시 생성하세요.</p>
             </div>
 
             <div style={styles.resultBox}>
@@ -187,6 +196,20 @@ function App() {
                 }}
               >
                 {copyButtonText}
+              </button>
+
+              <button
+                onClick={handleRegenerate}
+                disabled={!userInput.trim() || isGenerating}
+                style={{
+                  ...styles.secondaryButton,
+                  width: isMobile ? "100%" : "auto",
+                  opacity: !userInput.trim() || isGenerating ? 0.5 : 1,
+                  cursor:
+                    !userInput.trim() || isGenerating ? "not-allowed" : "pointer"
+                }}
+              >
+                다시 생성
               </button>
             </div>
           </section>
@@ -272,18 +295,20 @@ const styles = {
   },
   examplesWrap: {
     display: "flex",
-    flexWrap: "wrap",
-    gap: "8px",
+    flexDirection: "column",
+    gap: "10px",
     marginTop: "12px"
   },
   exampleButton: {
+    textAlign: "left",
     border: "1px solid #cbd5e1",
-    borderRadius: "999px",
+    borderRadius: "12px",
     background: "#f8fafc",
     color: "#334155",
-    padding: "8px 12px",
-    fontSize: "13px",
+    padding: "12px 14px",
+    fontSize: "14px",
     fontWeight: 600,
+    lineHeight: 1.5,
     cursor: "pointer"
   },
   actionRow: {
